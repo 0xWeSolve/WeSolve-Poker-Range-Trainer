@@ -67,6 +67,7 @@ body {
   width: 100%;
   max-width: 1350px;
   align-items: start;
+  margin-top: 148px;
 }
 
 .sidebar {
@@ -488,12 +489,12 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 
 /* Top controls wrapper */
 .top-controls {
-  position: absolute;
-  top: 24px;
-  left: 24px;
+  position: fixed;
+  top: 16px;
+  left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   z-index: 50;
 }
 .top-controls-row { display: flex; align-items: center; gap: 12px; }
@@ -514,7 +515,6 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 }
 
 /* App container margin */
-.app-container { margin-top: 30px; }
 
 /* Mode buttons group */
 .mode-group { display: flex; flex-direction: column; gap: 8px; }
@@ -1309,11 +1309,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --shadow-glow: 0 0 0 1px rgba(0,229,255,0.08), 0 8px 40px rgba(0,229,255,0.05);
     }
     [data-ui-theme="cyber"] body {
-      background-image:
-        radial-gradient(ellipse at 15% 50%, rgba(112,0,255,0.12) 0%, transparent 50%),
-        radial-gradient(ellipse at 85% 20%, rgba(0,229,255,0.10) 0%, transparent 45%),
-        repeating-linear-gradient(0deg,  transparent, transparent 59px, rgba(0,229,255,0.025) 60px),
-        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(0,229,255,0.025) 60px);
+      
     }
     [data-ui-theme="cyber"] .top-controls {
       background: rgba(3,0,10,0.95) !important;
@@ -1384,9 +1380,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --shadow-glow: 0 0 0 1px rgba(212,170,80,0.07), 0 8px 40px rgba(212,170,80,0.04);
     }
     [data-ui-theme="elite"] body {
-      background-image:
-        radial-gradient(ellipse at 0% 0%,    rgba(150,100,20,0.14) 0%, transparent 55%),
-        radial-gradient(ellipse at 100% 100%, rgba(120,15,30,0.10) 0%, transparent 55%);
+      
     }
     [data-ui-theme="elite"] .top-controls { background: rgba(5,3,4,0.96) !important; border-bottom-color: #2a2018 !important; }
     [data-ui-theme="elite"] .card {
@@ -1452,10 +1446,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --shadow-glow: 0 0 0 1px rgba(0,200,160,0.08), 0 8px 40px rgba(0,200,160,0.05);
     }
     [data-ui-theme="aurora"] body {
-      background-image:
-        radial-gradient(ellipse at 10% 30%,  rgba(0,200,160,0.14) 0%, transparent 45%),
-        radial-gradient(ellipse at 90% 70%,  rgba(192,64,240,0.12) 0%, transparent 45%),
-        radial-gradient(ellipse at 50% 5%,   rgba(0,160,255,0.07) 0%, transparent 40%);
+      
     }
     [data-ui-theme="aurora"] .top-controls { background: rgba(2,8,16,0.96) !important; border-bottom-color: #162640 !important; }
     [data-ui-theme="aurora"] .card {
@@ -1516,51 +1507,279 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
     .ui-theme-pill.active  { border-color: currentColor !important; transform: scale(1.06); box-shadow: 0 2px 10px rgba(0,0,0,0.6); }
     .ui-theme-pill:hover   { transform: scale(1.08); }
 
-  </style>
+  
+/* ═══════════════════════════════════════════════════════════
+   PRO TOP BAR  v2.0  — inspired by GTOWizard / Linear
+   ═══════════════════════════════════════════════════════════ */
+
+/* Override old .top-controls rules set earlier */
+.top-controls {
+  position: fixed !important;
+  top: 0 !important; left: 0 !important; right: 0 !important;
+  width: 100% !important;
+  height: 56px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: rgba(5,6,11,0.97) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.55) !important;
+  z-index: 300 !important;
+  overflow: visible !important;
+}
+/* Kill old row structure */
+.top-controls-row { display: none !important; }
+
+/* ── Brand block ──────────────────────────────────────────── */
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 152px;
+  user-select: none;
+}
+.topbar-logo-icon {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(77,166,255,0.4);
+  letter-spacing: -0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.topbar-wordmark {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.topbar-wordmark-name {
+  font-size: 0.8rem; font-weight: 800;
+  color: var(--text); line-height: 1;
+  letter-spacing: 0.1px;
+}
+.topbar-wordmark-sub {
+  font-size: 0.48rem; font-weight: 700;
+  color: var(--dim); letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+
+/* ── Center groups wrapper ────────────────────────────────── */
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Individual group ─────────────────────────────────────── */
+.topbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topbar-group-label {
+  font-size: 0.48rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: var(--dim) !important;
+  white-space: nowrap !important;
+  margin: 0 3px 0 0 !important;
+  width: auto !important;
+  flex-shrink: 0;
+}
+
+/* ── Right dock ───────────────────────────────────────────── */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 16px;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Skin buttons in topbar ───────────────────────────────── */
+.topbar-group .skin-btn {
+  padding: 4px 11px !important;
+  margin-bottom: 0 !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 0.6rem !important;
+  font-weight: 700 !important;
+}
+/* ── Color dot buttons in topbar ──────────────────────────── */
+.topbar-group .theme-btn {
+  width: 18px !important;
+  height: 18px !important;
+  margin-bottom: 0 !important;
+}
+
+/* ── Segmented grid-style control ────────────────────────── */
+.topbar-grid-seg {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  height: 28px;
+}
+.topbar-grid-seg .toggle-btn {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 11px !important;
+  height: 100% !important;
+  font-size: 0.6rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  width: auto !important;
+  margin-bottom: 0 !important;
+  border-right: 1px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.topbar-grid-seg .toggle-btn:last-child {
+  border-right: none !important;
+}
+.topbar-grid-seg .toggle-btn.active {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+}
+.topbar-grid-seg .toggle-btn:hover:not(.active) {
+  background: var(--surface-3) !important;
+  color: var(--muted) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── UI Theme pills in topbar ─────────────────────────────── */
+.topbar-right .ui-theme-pill {
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ── App container: account for 56px bar ─────────────────── */
+.app-container {
+  margin-top: 72px !important;
+}
+
+/* ── Per-theme topbar tints ───────────────────────────────── */
+[data-ui-theme="cyber"]  .top-controls { background: rgba(3,0,10,0.98)  !important; border-bottom-color: #1a1640 !important; }
+[data-ui-theme="elite"]  .top-controls { background: rgba(5,3,4,0.98)   !important; border-bottom-color: #2a2018 !important; }
+[data-ui-theme="aurora"] .top-controls { background: rgba(2,8,16,0.98)  !important; border-bottom-color: #162640 !important; }
+
+/* ── Per-theme logo gradient ──────────────────────────────── */
+[data-ui-theme="cyber"]  .topbar-logo-icon { box-shadow: 0 2px 10px rgba(0,229,255,0.4); }
+[data-ui-theme="elite"]  .topbar-logo-icon { box-shadow: 0 2px 10px rgba(212,170,80,0.4); }
+[data-ui-theme="aurora"] .topbar-logo-icon { box-shadow: 0 2px 10px rgba(0,200,160,0.4); }
+
+/* ═══════════════════════════════════════════════════════════
+   BACKGROUND FIX — move theme gradients to a fixed pseudo
+   so they never scroll with page content (eliminates glitch)
+   ═══════════════════════════════════════════════════════════ */
+body {
+  background-image: none !important;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+[data-ui-theme="cyber"] body::before {
+  background-image:
+    radial-gradient(ellipse at 15% 50%, rgba(112,0,255,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(0,229,255,0.10) 0%, transparent 45%),
+    repeating-linear-gradient(0deg,  transparent, transparent 59px, rgba(0,229,255,0.025) 60px),
+    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(0,229,255,0.025) 60px);
+}
+[data-ui-theme="elite"] body::before {
+  background-image:
+    radial-gradient(ellipse at 0%   0%,   rgba(150,100,20,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(120,15,30,0.10)  0%, transparent 55%);
+}
+[data-ui-theme="aurora"] body::before {
+  background-image:
+    radial-gradient(ellipse at 10% 30%, rgba(0,200,160,0.14)  0%, transparent 45%),
+    radial-gradient(ellipse at 90% 70%, rgba(192,64,240,0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 5%,  rgba(0,160,255,0.07)  0%, transparent 40%);
+}
+
+</style>
 </head>
 <body>
 
-<!-- ── Top controls: SKIN / THEME / GRID STYLE ─────────────── -->
+<!-- ═══ PRO TOP BAR ═══════════════════════════════════════════ -->
 <div class="top-controls">
 
-  <div class="top-controls-row top-controls-row--skin">
-    <div class="label-sm top-controls-label">SKIN</div>
-    <div style="display:flex;gap:5px;">
+  <!-- Brand -->
+  <div class="topbar-brand">
+    <div class="topbar-logo-icon">WS</div>
+    <div class="topbar-wordmark">
+      <span class="topbar-wordmark-name">WeSolve</span>
+      <span class="topbar-wordmark-sub">Preflop Trainer</span>
+    </div>
+  </div>
+
+  <!-- Control groups -->
+  <div class="topbar-controls">
+
+    <div class="topbar-group">
+      <span class="topbar-group-label">Skin</span>
       <button class="skin-btn active" data-skin="default" id="skin-default">Custom</button>
-      <button class="skin-btn"        data-skin="pio"     id="skin-pio">PioSolver</button>
-      <button class="skin-btn"        data-skin="wizard"  id="skin-wizard">GTO Wizard</button>
+      <button class="skin-btn" data-skin="pio" id="skin-pio">PioSolver</button>
+      <button class="skin-btn" data-skin="wizard" id="skin-wizard">GTO Wizard</button>
     </div>
+
+    <div class="topbar-group">
+      <span class="topbar-group-label">Colors</span>
+      <button class="theme-btn active" data-theme="gto"    id="theme-gto"    style="background:linear-gradient(135deg,#ff4d4d,#1fd98a)" title="GTO Standard"></button>
+      <button class="theme-btn"        data-theme="safe"   id="theme-safe"   style="background:linear-gradient(135deg,#e6194b,#4363d8)" title="Colorblind Safe"></button>
+      <button class="theme-btn"        data-theme="heat"   id="theme-heat"   style="background:linear-gradient(135deg,#b30000,#ff9999)" title="Fire Heatmap"></button>
+      <button class="theme-btn"        data-theme="wizard" id="theme-wizard" style="background:linear-gradient(135deg,#e63950,#00c9a7)" title="GTO Wizard"></button>
+      <button class="theme-btn"        data-theme="chart"  id="theme-chart"  style="background:linear-gradient(135deg,#e63946,#2dc653)" title="Chart Standard"></button>
+    </div>
+
+    <div class="topbar-group">
+      <span class="topbar-group-label">Grid</span>
+      <div class="topbar-grid-seg">
+        <button id="btn-style-stripes"    class="toggle-btn active">Barcode</button>
+        <button id="btn-style-horizontal" class="toggle-btn">Stack</button>
+        <button id="btn-style-dots"       class="toggle-btn">Dots</button>
+      </div>
+    </div>
+
   </div>
 
-  <div class="top-controls-row">
-    <div class="label-sm top-controls-label">THEME</div>
-    <div style="display:flex;gap:8px;">
-      <button class="theme-btn active" data-theme="gto"    id="theme-gto"    style="background:linear-gradient(135deg,#ff4d4d,#1fd98a);"  title="GTO Standard"></button>
-      <button class="theme-btn"        data-theme="safe"   id="theme-safe"   style="background:linear-gradient(135deg,#e6194b,#4363d8);"  title="Colorblind Safe"></button>
-      <button class="theme-btn"        data-theme="heat"   id="theme-heat"   style="background:linear-gradient(135deg,#b30000,#ff9999);"  title="Fire Heatmap"></button>
-      <button class="theme-btn"        data-theme="wizard" id="theme-wizard" style="background:linear-gradient(135deg,#e63950,#00c9a7);"  title="GTO Wizard"></button>
-      <button class="theme-btn"        data-theme="chart"  id="theme-chart"  style="background:linear-gradient(135deg,#e63946,#2dc653);"  title="Chart Standard"></button>
-    </div>
+  <!-- Right: UI Style pills -->
+  <div class="topbar-right">
+    <span class="topbar-group-label">Style</span>
+    <button class="ui-theme-pill active" data-ui-theme="default" id="ui-theme-default">Default</button>
+    <button class="ui-theme-pill"        data-ui-theme="cyber"   id="ui-theme-cyber">Cyber</button>
+    <button class="ui-theme-pill"        data-ui-theme="elite"   id="ui-theme-elite">Elite</button>
+    <button class="ui-theme-pill"        data-ui-theme="aurora"  id="ui-theme-aurora">Aurora</button>
   </div>
 
-  <div class="top-controls-row">
-    <div class="label-sm top-controls-label">GRID</div>
-    <div class="grid-style-group">
-      <button id="btn-style-stripes"    class="toggle-btn active">Barcode</button>
-      <button id="btn-style-horizontal" class="toggle-btn">Stack</button>
-      <button id="btn-style-dots"       class="toggle-btn">Dots</button>
-    </div>
-  </div>
-
-  <div class="top-controls-row">
-    <div class="label-sm top-controls-label">STYLE</div>
-    <div class="ui-theme-switcher">
-      <button class="ui-theme-pill active" data-ui-theme="default" id="ui-theme-default">Default</button>
-      <button class="ui-theme-pill" data-ui-theme="cyber"   id="ui-theme-cyber">Cyber</button>
-      <button class="ui-theme-pill" data-ui-theme="elite"   id="ui-theme-elite">Elite</button>
-      <button class="ui-theme-pill" data-ui-theme="aurora"  id="ui-theme-aurora">Aurora</button>
-    </div>
-  </div>
 </div>
 
 <!-- ── Main layout ──────────────────────────────────────────── -->
@@ -1699,18 +1918,22 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 <div class="modal-bg" id="quiz-modal">
   <div class="modal-card modal-quiz">
     <div id="quiz-main">
-      <div id="quiz-title-label" class="quiz-title">RANGE QUIZ</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div id="quiz-title-label" class="quiz-title" style="margin-bottom:0">🧠 SMART QUIZ</div>
+        <div id="quiz-streak" style="font-size:0.85rem;font-weight:800;font-family:'JetBrains Mono',monospace;min-width:40px;text-align:right"></div>
+      </div>
       <div id="quiz-hand" class="quiz-hand-big">AKs</div>
       <div id="quiz-pos"  class="quiz-pos-line">POSITION: BTN</div>
+      <div id="quiz-why" style="font-size:0.58rem;color:var(--dim);letter-spacing:0.8px;min-height:16px;margin-bottom:10px;text-align:center"></div>
       <div class="quiz-answer-group">
         <button id="quiz-btn-in"   class="quiz-btn-in">IN RANGE (1)</button>
         <button id="quiz-btn-fold" class="quiz-btn-fold">FOLD (2)</button>
       </div>
       <div id="quiz-feedback" class="quiz-feedback">1 / ← In Range &nbsp;·&nbsp; 2 / → Fold</div>
-      <div id="quiz-score"    class="quiz-score">Score: 0 / 0</div>
+      <div id="quiz-score" class="quiz-score">Score: 0 / 0</div>
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <button id="quiz-exit"    class="quiz-exit" style="flex:1">Exit</button>
-        <button id="quiz-summary-btn" class="btn-primary" style="flex:1;padding:8px;font-size:0.7rem;font-weight:700;letter-spacing:1px;" onclick="quiz.showSummary()">Summary</button>
+        <button id="quiz-exit" class="quiz-exit" style="flex:1">Exit</button>
+        <button id="quiz-summary-btn" class="btn-primary" style="flex:1;padding:8px;font-size:0.7rem;font-weight:700;letter-spacing:1px;">Summary</button>
       </div>
     </div>
     <div id="quiz-summary" style="display:none;min-width:280px;"></div>
@@ -2004,15 +2227,18 @@ function saveStorage(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); 
 
 function seedBuiltins() {
   const store = loadStorage();
-  // Always restore builtins to their original state — they are protected presets
+  // Only seed if the key doesn't exist yet — preserves user edits
   Object.entries(BUILTIN_RFI).forEach(([k, preset]) => {
+    if (store[k]) return;
     const { name, presetType, ...data } = preset;
     store[k] = { name, mode: 'RFI', presetType: presetType ?? 'hesitation', data };
   });
   Object.entries(BUILTIN_DEF).forEach(([k, data]) => {
+    if (store[k]) return;
     store[k] = { name: k, mode: 'DEF_SPOT', data };
   });
   Object.entries(BUILTIN_DEF_MASTER).forEach(([k, data]) => {
+    if (store[k]) return;
     store[k] = { name: k, mode: 'DEF_MASTER', data };
   });
   saveStorage(store);
@@ -2228,6 +2454,7 @@ function init() {
   $('quiz-btn-in').addEventListener('click',   () => quiz.answer(true));
   $('quiz-btn-fold').addEventListener('click',  () => quiz.answer(false));
   $('quiz-exit').addEventListener('click',         () => quiz.close());
+  $('quiz-summary-btn').addEventListener('click',    () => quiz.showSummary());
 
   // Radio stations + volume
   ['lofi','hiphop','ambient','retrowave','jazz','rock','metal','classical']
@@ -3040,62 +3267,141 @@ function closeModals() {
 // ═══════════════════════════════════════════════════════════════════
 // QUIZ
 // ═══════════════════════════════════════════════════════════════════
+// ── Hand strength tiers (intrinsic, position-agnostic) ──────────────
+const HAND_TIERS = (() => {
+  const t = {};
+  // Tier 1 — premium, always expected to open → only quiz if they FOLD somewhere
+  'AA,KK,QQ,JJ,TT,AKs,AQs,AJs,ATs,AKo'.split(',').forEach(h => t[h] = 1);
+  // Tier 2 — strong but position-sensitive → very interesting border cases
+  '99,88,77,A9s,A8s,A7s,A6s,A5s,A4s,A3s,A2s,KQs,KJs,KTs,QJs,JTs,T9s,AQo,AJo,ATo,KQo'.split(',').forEach(h => t[h] = 2);
+  // Tier 3 — borderline, often position-dependent → core quiz material
+  '66,55,44,33,22,K9s,K8s,K7s,K6s,K5s,K4s,K3s,K2s,Q9s,Q8s,Q7s,J9s,J8s,T8s,98s,87s,76s,65s,54s,A9o,A8o,A7o,A6o,A5o,KJo,KTo,QJo,QTo,JTo'.split(',').forEach(h => t[h] = 3);
+  // Tier 4 — weak, surprising when they open → high quiz value when present
+  'Q6s,Q5s,Q4s,Q3s,Q2s,J7s,J6s,J5s,J4s,T7s,T6s,T5s,97s,96s,95s,86s,85s,75s,74s,64s,63s,53s,52s,43s,42s,32s,K9o,K8o,K7o,K6o,Q9o,Q8o,Q7o,J9o,J8o,J7o,T9o,T8o,98o,97o,87o,86o,76o,75o,65o,64o,54o,53o'.split(',').forEach(h => t[h] = 4);
+  return t;
+})();
+
 const quiz = (() => {
   let active      = false;
   let current     = null;
-  let stats       = { r: 0, t: 0 };
+  let stats       = { r: 0, t: 0, streak: 0, bestStreak: 0 };
   let timeoutId   = null;
   let data        = null;
   let mode        = 'RFI';
   let presetType  = 'hesitation';
-  let pool        = [];   // { h, p, weight } — rebuilt on open
-  let sessionErrs = {};   // key: h+'|'+p → wrong count this session
+  let pool        = [];
+  let sessionErrs = {};
 
-  // ── Build weighted pool from preset data ──────────────────────
-  function buildPool(presetData, presetMode, pType) {
-    const axis    = presetMode === 'DEF_SPOT' ? DEF_OPS
-                  : presetMode === 'DEF_MASTER' ? DEF_MASTER_POS
+  // ── Smart pool builder ────────────────────────────────────────
+  function buildPool(presetData, presetMode) {
+    const axis    = presetMode === 'DEF_SPOT'   ? DEF_OPS
+                  : presetMode === 'DEF_MASTER'  ? DEF_MASTER_POS
                   : POSITIONS;
     const freqMap = presetData.__freq ?? {};
     const entries = [];
 
+    // Precompute per-hand: how many positions open vs fold
+    const handStats = {};
     ALL_HANDS.forEach(h => {
+      let opens = 0, folds = 0;
+      axis.forEach(p => { if (presetData[p]?.includes(h)) opens++; else folds++; });
+      handStats[h] = { opens, folds, total: axis.length };
+    });
+
+    ALL_HANDS.forEach(h => {
+      const tier = HAND_TIERS[h] ?? 3;
+      const { opens, folds, total } = handStats[h];
+
+      // Hard skip — these are never educational
+      if (opens === total && tier === 1) return; // AA always opens — boring
+      if (folds === total && tier === 4) return; // trash always folds — boring
+      if (folds === total && tier === 3 && opens === 0) return; // weak hand never opens — expected
+
+      // Position variance: 0 = totally consistent, 0.5 = perfectly split
+      const variance = total > 1 ? Math.min(opens, folds) / total : 0;
+
       axis.forEach(p => {
         const inRange = presetData[p]?.includes(h) ?? false;
-        if (!inRange) {
-          // Fold hands: always weight 1 — need to know these too
-          entries.push({ h, p, inRange: false, weight: 1 });
-          return;
-        }
-        const f = freqMap[h]?.[p] ?? 100;
-        let weight;
-        if (pType === 'hesitation') {
-          // Partial = uncertainty → boost. 100% = confident → normal
-          weight = f < 100 ? 3 : 1;
+        const f       = inRange ? (freqMap[h]?.[p] ?? 100) : 0;
+
+        // Surprise: how unexpected is this decision given the hand's tier?
+        // Tier4 hand opening = very surprising (1.0). Tier1 hand folding = very surprising (1.0).
+        let surprise;
+        if (inRange) {
+          surprise = (tier - 1) / 3;      // tier1=0, tier2=0.33, tier3=0.67, tier4=1.0
         } else {
-          // Frequency mode: proportional to actual GTO frequency
-          weight = f / 100;
+          surprise = (4 - tier) / 3;      // tier1=1.0, tier2=0.67, tier3=0.33, tier4=0
         }
-        entries.push({ h, p, inRange: true, weight });
+
+        // Mixed GTO frequency = always interesting
+        const mixBoost = (f > 5 && f < 95) ? 1.5 : 0;
+
+        // Position variance = this hand behaves differently elsewhere → must learn
+        const varBoost = variance * 2.5;
+
+        const weight = surprise * 2 + mixBoost + varBoost;
+
+        // Hard cutoff — skip truly obvious cases
+        if (weight < 0.35) return;
+
+        entries.push({ h, p, inRange, weight, tier, f, variance });
       });
     });
+
     return entries;
   }
 
-  // ── Weighted random pick ──────────────────────────────────────
+  // ── Weighted random pick with session-error boost ─────────────
   function pickFromPool() {
-    // Apply session error boost on top of base weights
     const total = pool.reduce((s, e) => {
-      const errBoost = (sessionErrs[e.h + '|' + e.p] ?? 0) * 1.5;
-      return s + e.weight + errBoost;
+      return s + e.weight + (sessionErrs[e.h + '|' + e.p] ?? 0) * 2.5;
     }, 0);
     let r = Math.random() * total;
     for (const e of pool) {
-      const errBoost = (sessionErrs[e.h + '|' + e.p] ?? 0) * 1.5;
-      r -= e.weight + errBoost;
+      r -= e.weight + (sessionErrs[e.h + '|' + e.p] ?? 0) * 2.5;
       if (r <= 0) return e;
     }
     return pool[pool.length - 1];
+  }
+
+  // ── Post-answer explanation label ─────────────────────────────
+  function tierLabel(tier, inRange) {
+    if (inRange) {
+      if (tier === 4) return '⚡ Weak hand that opens here — tricky!';
+      if (tier === 3) return '📍 Position-dependent open';
+      if (tier === 2) return '🎯 Borderline — position matters';
+      if (tier === 1) return '✅ Strong hand';
+    } else {
+      if (tier === 1) return '⚠️ Strong hand that folds here — surprising!';
+      if (tier === 2) return '📍 Position-dependent fold';
+      if (tier === 3) return '🎯 Borderline fold';
+      if (tier === 4) return '✅ Weak hand — correctly folded';
+    }
+    return '';
+  }
+
+  // ── Streak display ────────────────────────────────────────────
+  function updateStreak(right) {
+    if (right) {
+      stats.streak++;
+      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
+    } else {
+      stats.streak = 0;
+    }
+    const el = $('quiz-streak');
+    if (!el) return;
+    if (stats.streak >= 5) {
+      el.textContent = '🔥 ' + stats.streak;
+      el.style.color = 'var(--good)';
+    } else if (stats.streak >= 3) {
+      el.textContent = '🔥 ' + stats.streak;
+      el.style.color = 'var(--accent)';
+    } else if (stats.streak > 0) {
+      el.textContent = stats.streak;
+      el.style.color = 'var(--muted)';
+    } else {
+      el.textContent = '';
+    }
   }
 
   function handleKey(e) {
@@ -3105,28 +3411,30 @@ const quiz = (() => {
   }
 
   function open() {
-    const key        = $('quiz-preset-sel').value;
-    const store      = loadStorage();
-    const item       = store[key];
-    data             = item?.data ?? null;
-    mode             = item?.mode ?? 'RFI';
-    presetType       = item?.presetType ?? 'hesitation';
+    const key   = $('quiz-preset-sel').value;
+    const store = loadStorage();
+    const item  = store[key];
+    data        = item?.data ?? null;
+    mode        = item?.mode ?? 'RFI';
+    presetType  = item?.presetType ?? 'hesitation';
     if (!data) { showInfo('No preset selected or preset has no data.'); return; }
 
     active      = true;
-    stats       = { r: 0, t: 0 };
+    stats       = { r: 0, t: 0, streak: 0, bestStreak: 0 };
     sessionErrs = {};
-    pool        = buildPool(data, mode, presetType);
+    pool        = buildPool(data, mode);
 
-    $('quiz-score').textContent       = 'Score: 0 / 0';
-    $('quiz-summary').style.display   = 'none';
-    $('quiz-main').style.display      = 'block';
-    $('quiz-modal').style.display     = 'flex';
+    if (pool.length === 0) {
+      showInfo('Not enough borderline hands in this preset to quiz.');
+      return;
+    }
+
+    $('quiz-score').textContent     = 'Score: 0 / 0';
+    $('quiz-summary').style.display = 'none';
+    $('quiz-main').style.display    = 'block';
+    $('quiz-modal').style.display   = 'flex';
     document.addEventListener('keydown', handleKey);
-
-    const typeLabel = presetType === 'frequency' ? '[F]' : '[H]';
-    $('quiz-title-label').textContent =
-      typeLabel + ' ' + (item.name ?? 'PRESET').toUpperCase();
+    $('quiz-title-label').textContent = '🧠 ' + (item.name ?? 'PRESET').toUpperCase();
     next();
   }
 
@@ -3143,9 +3451,14 @@ const quiz = (() => {
     $('quiz-hand').textContent = current.h;
     $('quiz-pos').textContent  = (mode === 'DEF_SPOT' ? 'ACTION: ' : 'POSITION: ') + current.p;
     $('quiz-pos').style.color  = state.colors[current.p] ?? 'var(--accent)';
-    $('quiz-feedback').textContent = '1 / ← In Range  ·  2 / → Fold';
+    $('quiz-feedback').innerHTML = '<span style="color:var(--dim);font-size:0.65rem">1 / ← In Range &nbsp;·&nbsp; 2 / → Fold</span>';
     $('quiz-btn-in').disabled   = false;
     $('quiz-btn-fold').disabled = false;
+    // Hint: reveal positional variance without spoiling the answer
+    const why = $('quiz-why');
+    if (why) {
+      why.textContent = current.variance > 0.3 ? '↕ Plays differently across positions' : '';
+    }
   }
 
   function answer(ans) {
@@ -3160,49 +3473,56 @@ const quiz = (() => {
       const k = current.h + '|' + current.p;
       sessionErrs[k] = (sessionErrs[k] ?? 0) + 1;
     }
+    updateStreak(right);
 
-    const pct = stats.t > 0 ? Math.round((stats.r / stats.t) * 100) : 0;
-    $('quiz-score').textContent = `Score: ${stats.r} / ${stats.t} (${pct}%)`;
+    const pct = Math.round((stats.r / stats.t) * 100);
+    $('quiz-score').textContent = `Score: ${stats.r} / ${stats.t}  (${pct}%)`;
 
-    const freqMap  = data.__freq ?? {};
-    const f        = current.inRange ? (freqMap[current.h]?.[current.p] ?? 100) : null;
-    const freqHint = (f !== null && f < 100)
-      ? ` <span style="color:var(--muted);font-size:0.65rem">(${f}%${presetType === 'hesitation' ? ' hesitation' : ' GTO mix'})</span>`
+    const f       = current.inRange ? (current.f ?? 100) : 0;
+    const freqHint = current.inRange && f < 100
+      ? `<span style="color:var(--muted);font-size:0.6rem;display:block;margin-top:2px">GTO mix: ${f}% of the time</span>`
+      : '';
+    const tl     = tierLabel(current.tier, current.inRange);
+    const tlHtml = tl
+      ? `<div style="font-size:0.58rem;color:var(--muted);margin-top:4px;letter-spacing:0.3px">${tl}</div>`
       : '';
 
     $('quiz-feedback').innerHTML = right
-      ? `<span style="color:var(--good)">✓ CORRECT</span>${freqHint}`
-      : `<span style="color:var(--bad)">✗ ${current.p}: should ${current.inRange ? 'PLAY' : 'FOLD'}</span>${freqHint}`;
+      ? `<span style="color:var(--good)">✓ CORRECT</span>${freqHint}${tlHtml}`
+      : `<span style="color:var(--bad)">✗ ${current.p}: should ${current.inRange ? 'OPEN' : 'FOLD'}</span>${freqHint}${tlHtml}`;
 
-    timeoutId = setTimeout(next, 1400);
+    timeoutId = setTimeout(next, 1800);
   }
 
   function showSummary() {
     $('quiz-main').style.display    = 'none';
     $('quiz-summary').style.display = 'block';
     const pct = stats.t > 0 ? Math.round((stats.r / stats.t) * 100) : 0;
+    const col = pct >= 80 ? 'var(--good)' : pct >= 60 ? 'var(--accent)' : 'var(--bad)';
 
-    // Top 5 most-missed hands this session
     const sorted = Object.entries(sessionErrs)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1] - a[1]).slice(0, 8);
 
     const missHtml = sorted.length
       ? sorted.map(([k, n]) => {
           const [h, p] = k.split('|');
-          return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.75rem;">
-            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700">${h}</span>
-            <span style="color:${state.colors[p] ?? 'var(--muted)'}">${p}</span>
-            <span style="color:var(--bad)">${n}✗</span>
+          const entry  = pool.find(e => e.h === h && e.p === p);
+          const tl     = entry ? tierLabel(entry.tier, entry.inRange) : '';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:6px">
+            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:800;min-width:38px;font-size:0.8rem">${h}</span>
+            <span style="color:${state.colors[p] ?? 'var(--muted)'};font-size:0.65rem;font-weight:700;min-width:32px">${p}</span>
+            <span style="color:var(--muted);font-size:0.56rem;flex:1;text-align:left;line-height:1.3">${tl}</span>
+            <span style="color:var(--bad);font-size:0.68rem;font-weight:800">${n}✗</span>
           </div>`;
         }).join('')
-      : '<div style="color:var(--good);font-size:0.8rem;text-align:center;padding:12px">No mistakes! 🎉</div>';
+      : '<div style="color:var(--good);font-size:0.95rem;text-align:center;padding:16px;font-weight:800">Perfect session! 🎉</div>';
 
     $('quiz-summary').innerHTML = `
-      <div class="quiz-title" style="margin-bottom:12px">SESSION SUMMARY</div>
-      <div style="font-size:1.4rem;font-weight:800;color:${pct >= 80 ? 'var(--good)' : pct >= 60 ? 'var(--accent)' : 'var(--bad)'};margin-bottom:4px">${pct}%</div>
-      <div style="font-size:0.65rem;color:var(--muted);margin-bottom:16px">${stats.r} correct / ${stats.t} total</div>
-      ${sorted.length ? '<div style="font-size:0.65rem;font-weight:800;color:var(--muted);letter-spacing:1px;margin-bottom:8px">MOST MISSED</div>' : ''}
+      <div class="quiz-title" style="margin-bottom:10px">SESSION SUMMARY</div>
+      <div style="font-size:2.2rem;font-weight:900;color:${col};line-height:1;font-family:'JetBrains Mono',monospace">${pct}%</div>
+      <div style="font-size:0.62rem;color:var(--muted);margin-bottom:4px">${stats.r} correct · ${stats.t} total</div>
+      <div style="font-size:0.6rem;color:var(--accent);margin-bottom:16px;font-weight:700">Best streak: ${stats.bestStreak} 🔥</div>
+      ${sorted.length ? '<div style="font-size:0.55rem;font-weight:800;color:var(--dim);letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase">Review these hands</div>' : ''}
       ${missHtml}
       <button class="quiz-exit" style="margin-top:16px;width:100%" onclick="quiz.close()">Close</button>
     `;
