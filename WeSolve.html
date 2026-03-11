@@ -1,0 +1,3445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6-Max Preflop Trainer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --skin-radius:        6px;
+  --skin-gap:           4px;
+  --skin-empty:         #161922;
+  --skin-empty-border:  1px solid #1f2438;
+  --skin-label-size:    10px;
+  --skin-label-weight:  700;
+  --skin-label-family:  'Inter', sans-serif;
+  --skin-label-opacity: 1;
+  --skin-label-align:   center;
+  --skin-label-justify: center;
+  --skin-label-pad:     0px;
+  --skin-cell-shadow:   none;
+  --skin-filled-shadow: none;
+  --skin-grid-bg:       #0e1018;
+  --skin-grid-pad:      8px;
+  --skin-aspect:        1 / 1;
+  --skin-label-color:   rgba(255,255,255,0.9);
+
+  --bg:        #05060b;
+  --surface:   #0e1018;
+  --surface-2: #161922;
+  --surface-3: #1a1e2b;
+  --border:    #1f2438;
+  --text:      #e6ecff;
+  --muted:     #8491b8;
+  --dim:       #4a5278;
+  --good:      #1fd98a;
+  --bad:       #ff4d7a;
+  --accent:    #4da6ff;
+  --accent-2:  #7c5cfc;
+  --r-lg:      14px;
+  --r-md:      8px;
+  --r-sm:      4px;
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.app-container {
+  display: grid;
+  grid-template-columns: 270px 1fr 280px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1350px;
+  align-items: start;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.card-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  margin-bottom: 12px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+select, button {
+  width: 100%;
+  padding: 10px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 6px;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+button:hover { background: var(--surface-3); border-color: var(--dim); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(77,166,255,0.2);
+  margin-bottom: 0;
+}
+
+.btn-danger {
+  color: var(--bad) !important;
+  background: rgba(255,77,122,0.08) !important;
+  border-color: rgba(255,77,122,0.4) !important;
+}
+
+/* ── Theme buttons ──────────────────────────────────────────── */
+.theme-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.theme-btn:hover { transform: scale(1.15); }
+.theme-btn.active {
+  border-color: var(--text);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+/* ── Skin buttons ───────────────────────────────────────────── */
+.skin-btn {
+  padding: 3px 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: rgba(14,16,24,0.85);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin-bottom: 0;
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+  width: auto;
+}
+.skin-btn.active,
+.skin-btn:hover {
+  background: var(--surface-3) !important;
+  border-color: var(--accent) !important;
+  color: var(--text) !important;
+}
+
+/* ── Toggle buttons ─────────────────────────────────────────── */
+.toggle-btn {
+  flex: 1;
+  padding: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--r-md);
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.1s;
+  margin-bottom: 0;
+}
+.toggle-btn.active { background: var(--surface-3); color: var(--text); border-color: var(--dim); }
+
+/* ── Quiz button ─────────────────────────────────────────────── */
+.quiz-btn {
+  background: linear-gradient(135deg, #1fd98a, #0b8a55) !important;
+  color: black !important;
+  font-weight: 800 !important;
+  font-size: 0.85rem !important;
+  padding: 12px !important;
+  box-shadow: 0 4px 15px rgba(31,217,138,0.3);
+  border: none !important;
+  margin-bottom: 0 !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.quiz-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(31,217,138,0.4); }
+
+/* ── Position pill ───────────────────────────────────────────── */
+.pos-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: background 0.1s, border-color 0.1s;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.pos-pill:hover { background: var(--surface-3); }
+.pos-pill.active {
+  border-color: var(--accent);
+  background: rgba(77,166,255,0.1);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* ── Utility ─────────────────────────────────────────────────── */
+.label-sm {
+  font-size: 0.6rem;
+  color: var(--dim);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.stats-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+/* ── Grid ────────────────────────────────────────────────────── */
+.grid-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 12px;
+  position: sticky;
+  top: 24px;
+  overflow: visible;
+  margin-top: 56px;   /* reserve space above for the hover bar */
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: var(--skin-gap);
+  background: var(--skin-grid-bg);
+  padding: var(--skin-grid-pad);
+  border-radius: var(--r-md);
+  user-select: none;
+}
+
+.cell {
+  will-change: transform;
+  aspect-ratio: var(--skin-aspect);
+  background: var(--skin-empty);
+  border-radius: var(--skin-radius);
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  border: var(--skin-empty-border);
+  box-shadow: var(--skin-cell-shadow);
+  transition: transform 0.1s, opacity 0.2s, border-color 0.2s;
+}
+.cell:hover { transform: scale(1.04); z-index: 10; border-color: var(--accent) !important; opacity: 1 !important; }
+
+.cell-all-in-fill {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.20);
+  border-radius: var(--skin-radius);
+}
+
+/* ── Ghost layer ─────────────────────────────────────────────── */
+.cell-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 2;           /* below stripes (z-index 25) but above empty bg */
+  pointer-events: none;
+  border-radius: var(--skin-radius);
+  background: var(--ghost-color, #f5c518);
+  opacity: var(--ghost-opacity, 0.25);
+  transition: opacity 0.15s;
+}
+
+/* Ghost slider */
+.ghost-slider {
+  width: 100%;
+  height: 4px;
+  accent-color: #f5c518;
+  cursor: pointer;
+}
+.ghost-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ghost-opacity-label {
+  font-size: 0.6rem;
+  color: var(--dim);
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 32px;
+  text-align: right;
+}
+#btn-ghost {
+  margin-bottom: 8px;
+}
+#btn-ghost.is-active {
+  background: rgba(245,197,24,0.15) !important;
+  border-color: #f5c518 !important;
+  color: #f5c518 !important;
+}
+
+/* ── Cell stripes ────────────────────────────────────────────── */
+.cell-stripes { position: absolute; inset: 0; display: flex; }
+.style-stripes    { flex-direction: row; }
+.style-stripes .stripe { flex: 1; height: 100%; }
+.style-dots       { flex-direction: row; align-items: flex-end; justify-content: center; gap: 3px; padding-bottom: 5px; }
+.style-dots .stripe { width: 6px; height: 6px; border-radius: 50%; flex: none; box-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.style-horizontal { flex-direction: column; }
+.style-horizontal .stripe { flex: 1; width: 100%; }
+
+.cell-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: var(--skin-label-align);
+  justify-content: var(--skin-label-justify);
+  padding: var(--skin-label-pad);
+  font-family: var(--skin-label-family);
+  font-size: var(--skin-label-size);
+  color: var(--skin-label-color);
+  font-weight: var(--skin-label-weight);
+  z-index: 25;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
+
+/* ── Diff states ─────────────────────────────────────────────── */
+.dimmed { opacity: 0.15; }
+.cell.diff-extra { opacity: 1 !important; }
+.cell.diff-miss  { opacity: 1 !important; }
+.cell.diff-extra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 4px var(--good);
+  z-index: 15;
+  pointer-events: none;
+}
+.cell.diff-miss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 4px var(--bad);
+  background: rgba(255,77,122,0.25);
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* ── Modals ──────────────────────────────────────────────────── */
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,7,12,0.9);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+/* ── Floating hover bar ──────────────────────────────────────── */
+#hover-bar {
+  position: absolute;
+  top: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(14,16,24,0.97);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+  z-index: 100;
+}
+#hover-bar.visible { opacity: 1; }
+#hover-bar .hb-hand-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-right: 4px;
+  padding-right: 14px;
+  border-right: 1px solid var(--border);
+}
+#hover-bar .hb-pos { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+#hover-bar .hb-pos-name   { font-size: 0.58rem; letter-spacing: 0.8px; }
+#hover-bar .hb-pos-action { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px; }
+#hover-bar .hb-pos-freq   { font-size: 0.55rem; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; }
+.hb-meta { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; padding-right: 14px; border-right: 1px solid var(--border); }
+.hb-meta-type   { font-size: 0.58rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.hb-meta-combos { font-size: 0.65rem; font-weight: 800; color: var(--text); }
+.hb-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+
+/* ── Radio bar ───────────────────────────────────────────────── */
+#radio-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  background: #0a0c12;
+  border-top: 1px solid #1f2438;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+.rstation {
+  padding: 0 22px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-right: 1px solid #1f2438;
+  transition: background 0.15s;
+}
+.rstation:hover { background: rgba(255,255,255,0.03); }
+
+@keyframes eq1 { 0%,100% { height: 4px  } 50% { height: 14px } }
+@keyframes eq2 { 0%,100% { height: 10px } 50% { height: 4px  } }
+@keyframes eq3 { 0%,100% { height: 7px  } 50% { height: 12px } }
+
+/* ── Layout utilities ─────────────────────────────────────────── */
+.flex-col   { display: flex; flex-direction: column; }
+.flex-row   { display: flex; flex-direction: row; }
+.flex-1     { flex: 1; }
+.flex-2     { flex: 2; }
+.gap-4      { gap: 4px; }
+.gap-6      { gap: 6px; }
+.gap-8      { gap: 8px; }
+.gap-10     { gap: 10px; }
+.mb-0       { margin-bottom: 0; }
+.mb-6       { margin-bottom: 6px; }
+.mb-8       { margin-bottom: 8px; }
+.mb-10      { margin-bottom: 10px; }
+.mb-12      { margin-bottom: 12px; }
+.mb-14      { margin-bottom: 14px; }
+.mt-16      { margin-top: 16px; }
+.w-full     { width: 100%; }
+
+/* ── Component-specific CSS (removes inline styles from HTML) ─── */
+
+/* Top controls wrapper */
+.top-controls {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+}
+.top-controls-row { display: flex; align-items: center; gap: 12px; }
+.top-controls-row--skin { gap: 8px; }
+.top-controls-label { width: 40px; margin-bottom: 0; white-space: nowrap; }
+.grid-style-group {
+  display: flex;
+  background: var(--surface-2);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+.grid-style-group .toggle-btn {
+  border: none;
+  padding: 4px 8px;
+  width: auto;
+  border-radius: 4px;
+}
+
+/* App container margin */
+.app-container { margin-top: 30px; }
+
+/* Mode buttons group */
+.mode-group { display: flex; flex-direction: column; gap: 8px; }
+
+/* Brush toggle group */
+.brush-group { display: flex; gap: 4px; margin-bottom: 14px; }
+.brush-btn   { flex: 1; margin-bottom: 0; font-size: 0.7rem; padding: 7px; }
+.brush-btn--inactive { background: var(--surface-2); border: 1px solid var(--border); }
+
+/* Stats divider */
+.stats-divider { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+
+/* Compare button states */
+#comp-btn           { background: var(--surface-2); border: 1px solid var(--border); margin-bottom: 0; }
+#comp-btn.is-active { background: var(--accent);    border: none; color: var(--bg); }
+
+/* Compare summary */
+.cmp-summary       { display: none; margin-top: 10px; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
+.cmp-summary-row   { display: flex; }
+.cmp-cell          { flex: 1; padding: 8px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; }
+.cmp-cell + .cmp-cell { border-left: 1px solid var(--border); }
+.cmp-cell--extra   { background: rgba(31,217,138,0.1); }
+.cmp-cell--miss    { background: rgba(255,77,122,0.1); }
+.cmp-cell--shared  { background: var(--surface-3); }
+.cmp-cell-label    { color: var(--muted); font-size: 0.6rem; margin-top: 2px; }
+
+/* Hover detail card */
+
+
+
+/* Modal sizing */
+.modal-quiz    { width: 360px; text-align: center; }
+.modal-export  { width: 460px; }
+.modal-import  { width: 500px; }
+.modal-saveas  { width: 340px; }
+.modal-confirm { width: 340px; text-align: center; }
+
+/* Quiz modal internals */
+.quiz-title    { font-size: 0.6rem; font-weight: 800; color: var(--dim); letter-spacing: 1.5px; margin-bottom: 12px; }
+.quiz-hand-big { font-size: 3.2rem; font-weight: 800; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+.quiz-pos-line { color: var(--accent); font-weight: 800; margin-bottom: 24px; font-size: 0.9rem; letter-spacing: 1px; }
+.quiz-answer-group { display: flex; gap: 10px; margin-bottom: 12px; }
+.quiz-btn-in   { flex: 1; background: var(--good); color: black; font-weight: 800; border: none; padding: 16px; font-size: 1rem; border-radius: var(--r-md); cursor: pointer; }
+.quiz-btn-fold { flex: 1; background: var(--bad);  color: white; font-weight: 800; border: none; padding: 16px; font-size: 1rem; border-radius: var(--r-md); cursor: pointer; }
+.quiz-feedback { font-size: 0.75rem; font-weight: 700; height: 20px; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; }
+.quiz-score    { font-size: 0.7rem; color: var(--muted); margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+.quiz-exit     { background: var(--surface-2); border: 1px solid var(--border); margin-bottom: 0; }
+
+/* Export modal */
+.export-textarea {
+  width: 100%; height: 260px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  border-radius: var(--r-md); margin-bottom: 12px;
+  outline: none; resize: none; line-height: 1.4;
+}
+.export-actions { display: flex; gap: 8px; }
+
+/* Import modal */
+.import-hint { font-size: 0.7rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+.import-textarea {
+  width: 100%; height: 200px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  border-radius: var(--r-md); margin-bottom: 10px;
+  outline: none; resize: none; line-height: 1.5;
+}
+.import-pos-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.import-pos-label { white-space: nowrap; margin-bottom: 0; }
+.import-actions  { display: flex; gap: 8px; }
+
+/* Saveas modal */
+.saveas-input {
+  width: 100%; padding: 10px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--r-md); font-size: 0.8rem; margin-bottom: 14px; font-family: inherit;
+}
+.saveas-actions { display: flex; gap: 8px; }
+
+/* Confirm modal */
+.confirm-message { font-size: 0.8rem; color: var(--text); margin-bottom: 20px; line-height: 1.6; }
+.confirm-actions { display: flex; gap: 8px; }
+
+/* Radio bar internals */
+.radio-status { display: flex; align-items: center; gap: 10px; padding: 0 20px; border-right: 1px solid #1f2438; height: 100%; }
+.radio-eq-bar { display: flex; gap: 2px; align-items: flex-end; height: 14px; opacity: 0.3; transition: opacity 0.3s; }
+.radio-eq-bar div { width: 3px; background: #4da6ff; border-radius: 2px; }
+.radio-now { font-size: 0.65rem; font-weight: 700; color: #4a5278; letter-spacing: 1px; text-transform: uppercase; min-width: 90px; }
+.radio-vol-group { display: flex; align-items: center; gap: 10px; padding: 0 20px; border-left: 1px solid #1f2438; height: 100%; }
+.radio-vol-label { font-size: 0.6rem; font-weight: 800; color: #4a5278; letter-spacing: 1px; }
+.radio-vol-input { width: 80px; height: 4px; accent-color: #4da6ff; cursor: pointer; }
+.rstation-label  { font-size: 0.68rem; font-weight: 700; color: #8491b8; }
+
+/* Hover bar positions row */
+.hb-positions { display: flex; gap: 12px; }
+
+/* Position palette grid */
+.pos-palette { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+
+/* Spacer above radio bar */
+.radio-spacer { height: 48px; }
+
+        
+    /* ============================================================
+       PREMIUM UI OVERHAUL v1.0
+       Philosophy: Grid is the hero. Everything else serves it.
+       Rules: 8px spacing grid. 4 type levels. Motion everywhere.
+       Zero functional changes. Pure visual layer.
+    ============================================================ */
+
+    /* ── 1. GLOBAL TOKENS & RESETS ── */
+    :root {
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --shadow-sm:  0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.5);
+      --shadow-md:  0 4px 16px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+      --shadow-lg:  0 12px 40px rgba(0,0,0,0.65), 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-xl:  0 24px 64px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.5);
+      --shadow-glow: 0 0 0 1px rgba(77,166,255,0.12), 0 8px 32px rgba(77,166,255,0.08);
+    }
+
+    /* Smooth everything by default */
+    *, *::before, *::after {
+      transition-timing-function: var(--ease-out);
+    }
+
+    body {
+      padding: 0 !important;
+      overflow-x: hidden;
+    }
+
+    /* ── 2. LAYOUT — Grid as hero ── */
+    .app-container {
+      grid-template-columns: 248px 1fr 264px !important;
+      gap: 16px !important;
+      padding: 16px 20px 72px !important;
+      max-width: 1440px !important;
+      width: 100% !important;
+      box-sizing: border-box;
+      margin-top: 48px !important; /* space for top-controls */
+    }
+
+    .sidebar {
+      gap: 10px !important;
+      top: 16px !important;
+    }
+
+    /* ── 3. TOP CONTROLS — Floating pill bar ── */
+    .top-controls {
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 0 !important;
+      background: rgba(5,6,11,0.92) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      border-bottom: 1px solid var(--border) !important;
+      padding: 0 20px !important;
+      height: 48px !important;
+      z-index: 200 !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+    }
+
+    .top-controls-row {
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 8px !important;
+      height: 100% !important;
+      padding: 0 16px 0 0 !important;
+      border-right: 1px solid var(--border) !important;
+      margin-right: 0 !important;
+    }
+
+    .top-controls-row:last-child {
+      border-right: none !important;
+      padding-right: 0 !important;
+    }
+
+    .top-controls-label {
+      width: auto !important;
+      white-space: nowrap;
+      font-size: 0.55rem !important;
+      letter-spacing: 1.5px !important;
+      opacity: 0.5;
+    }
+
+    /* ── 4. CARDS — Elevation system ── */
+    .card {
+      padding: 14px 16px !important;
+      border-radius: 10px !important;
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: var(--shadow-md) !important;
+      transition: box-shadow 0.25s var(--ease-out) !important;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    /* ── 5. TYPOGRAPHY — 4 clear levels ── */
+
+    /* Level 1: Section titles */
+    .card-title {
+      font-size: 0.6rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 2px !important;
+      text-transform: uppercase !important;
+      color: var(--dim) !important;
+      margin-bottom: 10px !important;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 2px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+
+    /* Level 2: Big stats — make numbers POP */
+    #stat-combos,
+    #stat-pct {
+      font-size: 1.4rem !important;
+      font-weight: 800 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      color: var(--text) !important;
+      line-height: 1 !important;
+      letter-spacing: -1px !important;
+    }
+
+    .stats-bar {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: baseline !important;
+      font-size: 0.62rem !important;
+      color: var(--muted) !important;
+      margin-top: 6px !important;
+      padding: 8px 0 !important;
+      border-top: 1px solid var(--border) !important;
+    }
+
+    .stats-bar:first-of-type {
+      border-top: none !important;
+      padding-top: 0 !important;
+    }
+
+    /* Level 3: Labels */
+    .label-sm {
+      font-size: 0.55rem !important;
+      letter-spacing: 1.5px !important;
+      font-weight: 800 !important;
+      color: var(--dim) !important;
+      margin-bottom: 5px !important;
+    }
+
+    /* Level 4: Controls (buttons, selects) */
+    select,
+    button {
+      font-size: 0.72rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.3px !important;
+    }
+
+    /* ── 6. BUTTONS — Depth, lift, press ── */
+    select,
+    button {
+      padding: 8px 12px !important;
+      border-radius: 7px !important;
+      margin-bottom: 5px !important;
+      transition: transform 0.15s var(--ease-out),
+                  box-shadow 0.15s var(--ease-out),
+                  background 0.15s,
+                  border-color 0.15s,
+                  color 0.15s !important;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px) !important;
+      box-shadow: var(--shadow-md) !important;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0px) scale(0.98) !important;
+      box-shadow: var(--shadow-sm) !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.5px !important;
+      box-shadow: 0 4px 16px rgba(77,166,255,0.25), 0 1px 3px rgba(0,0,0,0.4) !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 24px rgba(77,166,255,0.35), 0 2px 6px rgba(0,0,0,0.4) !important;
+      transform: translateY(-2px) !important;
+    }
+
+    .btn-danger {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-danger::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    /* Quiz button — hero CTA */
+    .quiz-btn {
+      background: linear-gradient(135deg, var(--good) 0%, #0b8a55 100%) !important;
+      border: none !important;
+      color: #050a05 !important;
+      font-weight: 900 !important;
+      font-size: 0.8rem !important;
+      letter-spacing: 1px !important;
+      padding: 13px !important;
+      box-shadow: 0 6px 24px rgba(31,217,138,0.3), 0 2px 6px rgba(0,0,0,0.4) !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quiz-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { left: -100%; }
+      100% { left: 200%; }
+    }
+
+    .quiz-btn:hover:not(:disabled) {
+      box-shadow: 0 8px 32px rgba(31,217,138,0.4), 0 4px 12px rgba(0,0,0,0.4) !important;
+      transform: translateY(-2px) !important;
+    }
+
+    /* Skin buttons */
+    .skin-btn {
+      font-size: 0.6rem !important;
+      font-weight: 700 !important;
+      padding: 4px 10px !important;
+      border-radius: 6px !important;
+      letter-spacing: 0.5px !important;
+      transition: all 0.15s var(--ease-out) !important;
+    }
+
+    /* Toggle buttons */
+    .toggle-btn {
+      font-size: 0.62rem !important;
+      font-weight: 700 !important;
+      padding: 5px 8px !important;
+      border-radius: 6px !important;
+      letter-spacing: 0.3px !important;
+      transition: all 0.15s var(--ease-out) !important;
+    }
+
+    .toggle-btn.active {
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3) !important;
+    }
+
+    /* ── 7. POSITION PILLS — Premium selector ── */
+    .pos-pill {
+      padding: 9px 12px !important;
+      border-radius: 8px !important;
+      margin-bottom: 4px !important;
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.3px !important;
+      transition: all 0.18s var(--ease-out) !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pos-pill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      pointer-events: none;
+    }
+
+    .pos-pill:hover {
+      transform: translateX(2px) !important;
+    }
+
+    .pos-pill.active {
+      background: rgba(77,166,255,0.08) !important;
+      border-color: var(--accent) !important;
+      box-shadow: inset 3px 0 0 var(--accent),
+                  0 2px 12px rgba(77,166,255,0.1) !important;
+    }
+
+    .pos-pill.active:hover {
+      transform: translateX(2px) !important;
+    }
+
+    /* ── 8. GRID WRAP — The hero ── */
+    .grid-wrap {
+      border-radius: 12px !important;
+      padding: 16px !important;
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: var(--shadow-glow) !important;
+      transition: box-shadow 0.3s var(--ease-out) !important;
+      position: relative;
+    }
+
+    /* Subtle corner accent on grid */
+    .grid-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 60px; height: 60px;
+      background: radial-gradient(circle at 0% 0%, rgba(77,166,255,0.08), transparent 70%);
+      border-radius: 12px 0 0 0;
+      pointer-events: none;
+    }
+
+    .grid-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 60px; height: 60px;
+      background: radial-gradient(circle at 100% 100%, rgba(124,92,252,0.06), transparent 70%);
+      border-radius: 0 0 12px 0;
+      pointer-events: none;
+    }
+
+    /* ── 9. CELLS — Polished interactions ── */
+    .cell {
+      border-radius: var(--skin-radius) !important;
+      transition: transform 0.12s var(--ease-out),
+                  box-shadow 0.12s var(--ease-out),
+                  border-color 0.12s,
+                  opacity 0.2s !important;
+    }
+
+    .cell:hover {
+      transform: scale(1.07) !important;
+      box-shadow: 0 0 0 1.5px var(--accent),
+                  0 4px 16px rgba(77,166,255,0.25),
+                  0 2px 6px rgba(0,0,0,0.5) !important;
+      z-index: 10 !important;
+      border-color: var(--accent) !important;
+    }
+
+    /* ── 10. HOVER BAR — Floating premium ── */
+    #hover-bar {
+      background: rgba(14,16,24,0.98) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 10px !important;
+      padding: 8px 16px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7),
+                  0 0 0 1px rgba(77,166,255,0.08) !important;
+      top: -56px !important;
+    }
+
+    #hover-bar.visible {
+      animation: hoverBarIn 0.18s var(--ease-out) forwards;
+    }
+
+    @keyframes hoverBarIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .hb-hand-name {
+      font-size: 0.9rem !important;
+      font-weight: 900 !important;
+      color: var(--accent) !important;
+      letter-spacing: -0.5px !important;
+    }
+
+    /* ── 11. SELECT — Styled properly ── */
+    select {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238491b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 10px center !important;
+      padding-right: 28px !important;
+      cursor: pointer !important;
+    }
+
+    /* ── 12. MODALS — Proper elevation ── */
+    .modal-bg {
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      background: rgba(5,6,11,0.85) !important;
+    }
+
+    .modal-card {
+      border-radius: 14px !important;
+      padding: 24px !important;
+      box-shadow: var(--shadow-xl),
+                  0 0 0 1px rgba(255,255,255,0.04) !important;
+      animation: modalIn 0.22s var(--ease-out) forwards;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ── 13. RADIO BAR — Polished bottom dock ── */
+    #radio-bar {
+      height: 52px !important;
+      background: rgba(5,6,11,0.96) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-top: 1px solid var(--border) !important;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
+    }
+
+    .rstation {
+      padding: 0 16px !important;
+      font-size: 0.62rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.8px !important;
+      transition: background 0.15s, color 0.15s !important;
+      border-radius: 0 !important;
+      position: relative;
+    }
+
+    .rstation::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; right: 50%;
+      height: 2px;
+      background: var(--accent);
+      transition: left 0.2s var(--ease-out), right 0.2s var(--ease-out);
+    }
+
+    .rstation:hover::after,
+    .rstation.playing::after {
+      left: 12px;
+      right: 12px;
+    }
+
+    .rstation-label {
+      font-size: 0.6rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 1px !important;
+      transition: color 0.15s !important;
+    }
+
+    .rstation:hover .rstation-label {
+      color: var(--text) !important;
+    }
+
+    /* ── 14. STATS DIVIDER ── */
+    .stats-divider {
+      border-top: 1px solid var(--border) !important;
+      padding-top: 10px !important;
+      margin-top: 6px !important;
+    }
+
+    /* ── 15. COMPARE & GHOST CARDS ── */
+    .cmp-summary {
+      border-radius: 8px !important;
+      overflow: hidden !important;
+      border: 1px solid var(--border) !important;
+      margin-top: 8px !important;
+    }
+
+    .cmp-cell {
+      padding: 10px 8px !important;
+      font-size: 0.75rem !important;
+      font-weight: 800 !important;
+      transition: background 0.15s !important;
+    }
+
+    /* ── 16. SCROLLBAR — Custom ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+    /* ── 17. SELECTION ── */
+    ::selection {
+      background: rgba(77,166,255,0.25);
+      color: var(--text);
+    }
+
+    /* ── 18. INPUT FIELDS ── */
+    .export-textarea,
+    .import-textarea,
+    .saveas-input {
+      border-radius: 8px !important;
+      font-size: 0.73rem !important;
+      line-height: 1.55 !important;
+      transition: border-color 0.15s, box-shadow 0.15s !important;
+    }
+
+    .export-textarea:focus,
+    .import-textarea:focus,
+    .saveas-input:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(77,166,255,0.12) !important;
+      outline: none !important;
+    }
+
+    /* ── 19. BRUSH BUTTONS ── */
+    .brush-btn {
+      font-size: 0.68rem !important;
+      font-weight: 700 !important;
+      padding: 7px 10px !important;
+      letter-spacing: 0.3px !important;
+    }
+
+    /* ── 20. QUIZ MODAL — Elevated ── */
+    .quiz-hand-big {
+      font-size: 3.6rem !important;
+      font-weight: 900 !important;
+      letter-spacing: -2px !important;
+      background: linear-gradient(135deg, var(--text), var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1 !important;
+      margin-bottom: 6px !important;
+    }
+
+    .quiz-pos-line {
+      font-size: 0.85rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 3px !important;
+      text-transform: uppercase !important;
+    }
+
+    .quiz-btn-in,
+    .quiz-btn-fold {
+      border-radius: 10px !important;
+      font-size: 0.95rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.5px !important;
+      padding: 18px !important;
+      transition: transform 0.12s var(--ease-out), box-shadow 0.12s !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quiz-btn-in {
+      box-shadow: 0 4px 20px rgba(31,217,138,0.3) !important;
+    }
+
+    .quiz-btn-fold {
+      box-shadow: 0 4px 20px rgba(255,77,122,0.3) !important;
+    }
+
+    .quiz-btn-in:hover, .quiz-btn-fold:hover {
+      transform: translateY(-2px) scale(1.02) !important;
+    }
+
+    .quiz-btn-in:active, .quiz-btn-fold:active {
+      transform: scale(0.97) !important;
+    }
+
+    /* ── 21. MODE BUTTONS — Core Engine ── */
+    #mode-rfi, #mode-def-spot, #mode-def-master {
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      padding: 10px 12px !important;
+      letter-spacing: 0.3px !important;
+      text-align: left !important;
+      border-radius: 8px !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #mode-rfi.btn-primary::before,
+    #mode-def-spot.btn-primary::before,
+    #mode-def-master.btn-primary::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 3px 0 0 3px;
+    }
+
+    /* ── 22. POSITION PALETTE (right sidebar) ── */
+    .pos-palette {
+      gap: 4px !important;
+    }
+
+    /* ── 23. SUBTLE GRID ANIMATION on load ── */
+    @keyframes cellFadeIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── 24. GHOST SLIDER ── */
+    .ghost-slider {
+      height: 4px !important;
+      border-radius: 4px !important;
+      accent-color: #f5c518 !important;
+    }
+
+    /* ── 25. THEME BUTTONS — Cleaner ── */
+    .theme-btn {
+      width: 20px !important;
+      height: 20px !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+      transition: transform 0.18s var(--ease-out), box-shadow 0.18s !important;
+    }
+
+    .theme-btn:hover {
+      transform: scale(1.2) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7) !important;
+    }
+
+    .theme-btn.active {
+      transform: scale(1.15) !important;
+      box-shadow: 0 0 0 2px var(--text), 0 4px 12px rgba(0,0,0,0.7) !important;
+    }
+
+    /* ── 26. DIFF STATES — Sharper ── */
+    .cell.diff-extra::after {
+      box-shadow: inset 0 0 0 2px var(--good) !important;
+    }
+
+    .cell.diff-miss::after {
+      box-shadow: inset 0 0 0 2px var(--bad) !important;
+    }
+
+    /* ── 27. FOCUS VISIBLE — Accessibility ── */
+    button:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--accent) !important;
+      outline-offset: 2px !important;
+    }
+
+    /* ── 28. FLEX ROW GAPS ── */
+    .flex-row { gap: 6px !important; }
+
+    /* ── UI THEME OVERRIDES (Cyber / Elite / Aurora) ── */
+
+    [data-ui-theme="cyber"] {
+      --bg: #03000a;
+      --surface: #07041a;
+      --surface-2: #0c0824;
+      --surface-3: #100d2e;
+      --border: #1a1640;
+      --text: #e0f0ff;
+      --muted: #5a7a9a;
+      --dim: #2a3a5a;
+      --good: #00ffb3;
+      --bad: #ff2060;
+      --accent: #00e5ff;
+      --accent-2: #7000ff;
+      --skin-grid-bg: #050210;
+      --skin-empty: #0a0720;
+      --skin-empty-border: 1px solid #1a1640;
+      --skin-label-color: rgba(200,230,255,0.9);
+      --shadow-glow: 0 0 0 1px rgba(0,229,255,0.08), 0 8px 40px rgba(0,229,255,0.05);
+    }
+    [data-ui-theme="cyber"] body {
+      background-image:
+        radial-gradient(ellipse at 15% 50%, rgba(112,0,255,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 20%, rgba(0,229,255,0.10) 0%, transparent 45%),
+        repeating-linear-gradient(0deg,  transparent, transparent 59px, rgba(0,229,255,0.025) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(0,229,255,0.025) 60px);
+    }
+    [data-ui-theme="cyber"] .top-controls {
+      background: rgba(3,0,10,0.95) !important;
+      border-bottom-color: #1a1640 !important;
+    }
+    [data-ui-theme="cyber"] .card {
+      background: rgba(7,4,26,0.85) !important;
+      backdrop-filter: blur(12px);
+      border-color: #1a1640 !important;
+      box-shadow: 0 0 0 1px rgba(0,229,255,0.06), 0 8px 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(0,229,255,0.04) !important;
+    }
+    [data-ui-theme="cyber"] .card-title { color: #00e5ff !important; text-shadow: 0 0 12px rgba(0,229,255,0.4); -webkit-text-fill-color: unset !important; }
+    [data-ui-theme="cyber"] .card-title::before { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
+    [data-ui-theme="cyber"] .btn-primary {
+      background: linear-gradient(135deg, #00e5ff, #7000ff) !important;
+      box-shadow: 0 4px 24px rgba(0,229,255,0.4), 0 1px 3px rgba(0,0,0,0.5) !important;
+      color: #03000a !important;
+    }
+    [data-ui-theme="cyber"] .quiz-btn {
+      background: linear-gradient(135deg, #00ffb3, #00b37a) !important;
+      box-shadow: 0 4px 24px rgba(0,255,179,0.4) !important;
+      color: #03000a !important;
+    }
+    [data-ui-theme="cyber"] select,
+    [data-ui-theme="cyber"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold) {
+      background: rgba(12,8,36,0.9) !important;
+      border-color: #1a1640 !important;
+      color: #e0f0ff !important;
+    }
+    [data-ui-theme="cyber"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold):hover {
+      background: rgba(26,22,64,0.95) !important;
+      border-color: #00e5ff !important;
+      color: #00e5ff !important;
+    }
+    [data-ui-theme="cyber"] .pos-pill.active {
+      background: rgba(0,229,255,0.06) !important;
+      border-color: #00e5ff !important;
+      box-shadow: inset 3px 0 0 #00e5ff, 0 0 20px rgba(0,229,255,0.08) !important;
+    }
+    [data-ui-theme="cyber"] .cell:hover {
+      border-color: #00e5ff !important;
+      box-shadow: 0 0 0 1.5px #00e5ff, 0 0 20px rgba(0,229,255,0.5), inset 0 0 10px rgba(0,229,255,0.1) !important;
+    }
+    [data-ui-theme="cyber"] .grid-wrap { box-shadow: 0 0 60px rgba(112,0,255,0.12), 0 0 0 1px rgba(0,229,255,0.06) !important; }
+    [data-ui-theme="cyber"] #hover-bar { background: rgba(7,4,26,0.98) !important; border-color: rgba(0,229,255,0.3) !important; box-shadow: 0 8px 32px rgba(0,229,255,0.15) !important; }
+    [data-ui-theme="cyber"] .modal-bg  { background: rgba(3,0,10,0.92) !important; }
+    [data-ui-theme="cyber"] .modal-card { background: rgba(7,4,26,0.99) !important; border-color: rgba(0,229,255,0.2) !important; box-shadow: 0 0 60px rgba(0,229,255,0.12), var(--shadow-xl) !important; }
+    [data-ui-theme="cyber"] #radio-bar { background: rgba(3,0,10,0.97) !important; border-top-color: #1a1640 !important; }
+    [data-ui-theme="cyber"] .top-controls { background: rgba(3,0,10,0.96) !important; }
+
+    [data-ui-theme="elite"] {
+      --bg: #050304;
+      --surface: #0c0a08;
+      --surface-2: #131009;
+      --surface-3: #1a150c;
+      --border: #2a2018;
+      --text: #f5ead8;
+      --muted: #7a6a50;
+      --dim: #3a2e22;
+      --good: #d4aa50;
+      --bad: #c02040;
+      --accent: #d4aa50;
+      --accent-2: #8a1a28;
+      --skin-grid-bg: #080604;
+      --skin-empty: #0c0a08;
+      --skin-empty-border: 1px solid #2a2018;
+      --skin-label-color: rgba(245,234,216,0.85);
+      --shadow-glow: 0 0 0 1px rgba(212,170,80,0.07), 0 8px 40px rgba(212,170,80,0.04);
+    }
+    [data-ui-theme="elite"] body {
+      background-image:
+        radial-gradient(ellipse at 0% 0%,    rgba(150,100,20,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 100% 100%, rgba(120,15,30,0.10) 0%, transparent 55%);
+    }
+    [data-ui-theme="elite"] .top-controls { background: rgba(5,3,4,0.96) !important; border-bottom-color: #2a2018 !important; }
+    [data-ui-theme="elite"] .card {
+      background: rgba(12,10,8,0.92) !important;
+      backdrop-filter: blur(8px);
+      border-color: #2a2018 !important;
+      box-shadow: 0 0 0 1px rgba(212,170,80,0.06), 0 12px 50px rgba(0,0,0,0.95), inset 0 1px 0 rgba(212,170,80,0.04) !important;
+    }
+    [data-ui-theme="elite"] .card-title {
+      background: linear-gradient(90deg, #d4aa50, #f0d080, #c09030) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+    [data-ui-theme="elite"] .card-title::before { background: #d4aa50; box-shadow: 0 0 8px rgba(212,170,80,0.6); }
+    [data-ui-theme="elite"] .btn-primary {
+      background: linear-gradient(135deg, #d4aa50, #8a6010) !important;
+      box-shadow: 0 4px 24px rgba(212,170,80,0.3), 0 1px 3px rgba(0,0,0,0.6) !important;
+      color: #050304 !important;
+    }
+    [data-ui-theme="elite"] .quiz-btn {
+      background: linear-gradient(135deg, #d4aa50, #907020) !important;
+      color: #050304 !important;
+      box-shadow: 0 4px 24px rgba(212,170,80,0.35) !important;
+    }
+    [data-ui-theme="elite"] select,
+    [data-ui-theme="elite"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold) {
+      background: rgba(19,16,9,0.95) !important;
+      border-color: #2a2018 !important;
+      color: #f5ead8 !important;
+    }
+    [data-ui-theme="elite"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold):hover {
+      background: rgba(30,21,12,0.95) !important;
+      border-color: #d4aa50 !important;
+      color: #d4aa50 !important;
+    }
+    [data-ui-theme="elite"] .pos-pill.active { background: rgba(212,170,80,0.06) !important; border-color: #d4aa50 !important; box-shadow: inset 3px 0 0 #d4aa50 !important; }
+    [data-ui-theme="elite"] .cell:hover { border-color: #d4aa50 !important; box-shadow: 0 0 0 1.5px #d4aa50, 0 0 16px rgba(212,170,80,0.35) !important; }
+    [data-ui-theme="elite"] .grid-wrap { box-shadow: 0 0 60px rgba(100,65,10,0.1), 0 0 0 1px rgba(212,170,80,0.05) !important; }
+    [data-ui-theme="elite"] #hover-bar { background: rgba(12,10,8,0.99) !important; border-color: rgba(212,170,80,0.25) !important; box-shadow: 0 8px 32px rgba(212,170,80,0.1) !important; }
+    [data-ui-theme="elite"] .modal-bg  { background: rgba(5,3,4,0.94) !important; }
+    [data-ui-theme="elite"] .modal-card { background: rgba(12,10,8,0.99) !important; border-color: rgba(212,170,80,0.2) !important; box-shadow: 0 0 50px rgba(212,170,80,0.08), var(--shadow-xl) !important; }
+    [data-ui-theme="elite"] #radio-bar { background: rgba(5,3,4,0.97) !important; border-top-color: #2a2018 !important; }
+    [data-ui-theme="elite"] .quiz-hand-big { background: linear-gradient(135deg, #f5ead8, #d4aa50) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
+
+    [data-ui-theme="aurora"] {
+      --bg: #020810;
+      --surface: #060f1c;
+      --surface-2: #0a1626;
+      --surface-3: #0f1e32;
+      --border: #162640;
+      --text: #d8f0f0;
+      --muted: #4a7a80;
+      --dim: #1e3a45;
+      --good: #00e8b0;
+      --bad: #ff3060;
+      --accent: #00c8a0;
+      --accent-2: #c040f0;
+      --skin-grid-bg: #040c18;
+      --skin-empty: #060f1c;
+      --skin-empty-border: 1px solid #162640;
+      --skin-label-color: rgba(216,240,240,0.9);
+      --shadow-glow: 0 0 0 1px rgba(0,200,160,0.08), 0 8px 40px rgba(0,200,160,0.05);
+    }
+    [data-ui-theme="aurora"] body {
+      background-image:
+        radial-gradient(ellipse at 10% 30%,  rgba(0,200,160,0.14) 0%, transparent 45%),
+        radial-gradient(ellipse at 90% 70%,  rgba(192,64,240,0.12) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 5%,   rgba(0,160,255,0.07) 0%, transparent 40%);
+    }
+    [data-ui-theme="aurora"] .top-controls { background: rgba(2,8,16,0.96) !important; border-bottom-color: #162640 !important; }
+    [data-ui-theme="aurora"] .card {
+      background: rgba(6,15,28,0.82) !important;
+      backdrop-filter: blur(16px);
+      border-color: rgba(0,200,160,0.14) !important;
+      box-shadow: 0 0 0 1px rgba(0,200,160,0.07), 0 8px 40px rgba(0,0,0,0.85), inset 0 1px 0 rgba(0,200,160,0.06) !important;
+    }
+    [data-ui-theme="aurora"] .card-title {
+      background: linear-gradient(90deg, #00c8a0, #c040f0) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+    [data-ui-theme="aurora"] .card-title::before { background: linear-gradient(180deg, #00c8a0, #c040f0); box-shadow: 0 0 8px rgba(0,200,160,0.5); }
+    [data-ui-theme="aurora"] .btn-primary {
+      background: linear-gradient(135deg, #00c8a0, #c040f0) !important;
+      box-shadow: 0 4px 24px rgba(0,200,160,0.35), 0 1px 3px rgba(0,0,0,0.5) !important;
+      color: #020810 !important;
+    }
+    [data-ui-theme="aurora"] .quiz-btn {
+      background: linear-gradient(135deg, #00e8b0, #00a078) !important;
+      color: #020810 !important;
+      box-shadow: 0 4px 24px rgba(0,232,176,0.4) !important;
+    }
+    [data-ui-theme="aurora"] select,
+    [data-ui-theme="aurora"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold) {
+      background: rgba(10,22,38,0.85) !important;
+      border-color: #162640 !important;
+      color: #d8f0f0 !important;
+    }
+    [data-ui-theme="aurora"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold):hover {
+      background: rgba(15,30,50,0.9) !important;
+      border-color: #00c8a0 !important;
+      color: #00c8a0 !important;
+    }
+    [data-ui-theme="aurora"] .pos-pill.active { background: rgba(0,200,160,0.07) !important; border-color: #00c8a0 !important; box-shadow: inset 3px 0 0 #00c8a0, 0 0 20px rgba(0,200,160,0.08) !important; }
+    [data-ui-theme="aurora"] .cell:hover { border-color: #00c8a0 !important; box-shadow: 0 0 0 1.5px #00c8a0, 0 0 20px rgba(0,200,160,0.45), inset 0 0 8px rgba(0,200,160,0.08) !important; }
+    [data-ui-theme="aurora"] .grid-wrap { box-shadow: 0 0 60px rgba(0,200,160,0.07), 0 0 40px rgba(192,64,240,0.05) !important; }
+    [data-ui-theme="aurora"] #hover-bar { background: rgba(6,15,28,0.98) !important; border-color: rgba(0,200,160,0.25) !important; box-shadow: 0 8px 32px rgba(0,200,160,0.15) !important; }
+    [data-ui-theme="aurora"] .modal-bg  { background: rgba(2,8,16,0.92) !important; }
+    [data-ui-theme="aurora"] .modal-card { background: rgba(6,15,28,0.99) !important; border-color: rgba(0,200,160,0.18) !important; box-shadow: 0 0 60px rgba(0,200,160,0.1), 0 0 40px rgba(192,64,240,0.06), var(--shadow-xl) !important; }
+    [data-ui-theme="aurora"] #radio-bar { background: rgba(2,8,16,0.97) !important; border-top-color: rgba(0,200,160,0.1) !important; }
+    [data-ui-theme="aurora"] .quiz-hand-big { background: linear-gradient(135deg, #d8f0f0, #00c8a0) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
+
+    /* UI Theme pill buttons */
+    .ui-theme-switcher { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .ui-theme-pill {
+      padding: 3px 10px; font-size: 0.56rem; font-weight: 800;
+      border-radius: 20px; cursor: pointer; letter-spacing: 1px;
+      text-transform: uppercase; border: 1.5px solid transparent;
+      transition: all 0.18s var(--ease-out); white-space: nowrap; width: auto; margin-bottom: 0;
+    }
+    .ui-theme-pill[data-ui-theme="default"] { background: #161922;  border-color: #1f2438; color: #8491b8; }
+    .ui-theme-pill[data-ui-theme="cyber"]   { background: #07041a;  border-color: #1a1640; color: #00e5ff; }
+    .ui-theme-pill[data-ui-theme="elite"]   { background: #0c0a08;  border-color: #2a2018; color: #d4aa50; }
+    .ui-theme-pill[data-ui-theme="aurora"]  { background: #060f1c;  border-color: #162640; color: #00c8a0; }
+    .ui-theme-pill.active  { border-color: currentColor !important; transform: scale(1.06); box-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+    .ui-theme-pill:hover   { transform: scale(1.08); }
+
+  </style>
+</head>
+<body>
+
+<!-- ── Top controls: SKIN / THEME / GRID STYLE ─────────────── -->
+<div class="top-controls">
+
+  <div class="top-controls-row top-controls-row--skin">
+    <div class="label-sm top-controls-label">SKIN</div>
+    <div style="display:flex;gap:5px;">
+      <button class="skin-btn active" data-skin="default" id="skin-default">Custom</button>
+      <button class="skin-btn"        data-skin="pio"     id="skin-pio">PioSolver</button>
+      <button class="skin-btn"        data-skin="wizard"  id="skin-wizard">GTO Wizard</button>
+    </div>
+  </div>
+
+  <div class="top-controls-row">
+    <div class="label-sm top-controls-label">THEME</div>
+    <div style="display:flex;gap:8px;">
+      <button class="theme-btn active" data-theme="gto"    id="theme-gto"    style="background:linear-gradient(135deg,#ff4d4d,#1fd98a);"  title="GTO Standard"></button>
+      <button class="theme-btn"        data-theme="safe"   id="theme-safe"   style="background:linear-gradient(135deg,#e6194b,#4363d8);"  title="Colorblind Safe"></button>
+      <button class="theme-btn"        data-theme="heat"   id="theme-heat"   style="background:linear-gradient(135deg,#b30000,#ff9999);"  title="Fire Heatmap"></button>
+      <button class="theme-btn"        data-theme="wizard" id="theme-wizard" style="background:linear-gradient(135deg,#e63950,#00c9a7);"  title="GTO Wizard"></button>
+      <button class="theme-btn"        data-theme="chart"  id="theme-chart"  style="background:linear-gradient(135deg,#e63946,#2dc653);"  title="Chart Standard"></button>
+    </div>
+  </div>
+
+  <div class="top-controls-row">
+    <div class="label-sm top-controls-label">GRID</div>
+    <div class="grid-style-group">
+      <button id="btn-style-stripes"    class="toggle-btn active">Barcode</button>
+      <button id="btn-style-horizontal" class="toggle-btn">Stack</button>
+      <button id="btn-style-dots"       class="toggle-btn">Dots</button>
+    </div>
+  </div>
+
+  <div class="top-controls-row">
+    <div class="label-sm top-controls-label">STYLE</div>
+    <div class="ui-theme-switcher">
+      <button class="ui-theme-pill active" data-ui-theme="default" id="ui-theme-default">Default</button>
+      <button class="ui-theme-pill" data-ui-theme="cyber"   id="ui-theme-cyber">Cyber</button>
+      <button class="ui-theme-pill" data-ui-theme="elite"   id="ui-theme-elite">Elite</button>
+      <button class="ui-theme-pill" data-ui-theme="aurora"  id="ui-theme-aurora">Aurora</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main layout ──────────────────────────────────────────── -->
+<div class="app-container">
+
+  <!-- LEFT SIDEBAR ─────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-title">Core Engine</div>
+      <div class="mode-group">
+        <button id="mode-rfi"        class="btn-primary mb-0">1. Opening Ranges</button>
+        <button id="mode-def-spot"   class="mb-0">2. Defense Matchups</button>
+        <button id="mode-def-master" class="mb-0">3. Defense Overview</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Chart Library</div>
+      <select id="preset-sel" class="mb-12"></select>
+      <div class="flex-row gap-6 mb-6">
+        <button id="btn-load"   class="btn-primary flex-1 mb-0">Load</button>
+        <button id="btn-save"   class="flex-1 mb-0">Save</button>
+        <button id="btn-saveas" class="flex-1 mb-0">Save as…</button>
+      </div>
+      <div class="flex-row gap-6 mb-6">
+        <button id="btn-export" class="flex-1 mb-0">Export</button>
+        <button id="btn-clear"  class="btn-danger flex-1 mb-0">Clear</button>
+        <button id="btn-delete" class="btn-danger flex-1 mb-0">Delete</button>
+      </div>
+      <button id="btn-import" class="mb-0">⬆ Import Range</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quiz Mode</div>
+      <div class="label-sm">Target Preset:</div>
+      <select id="quiz-preset-sel" class="mb-12"></select>
+      <button id="btn-quiz" class="quiz-btn">Start Quiz</button>
+    </div>
+
+  </div>
+
+  <!-- CENTER GRID ───────────────────────────────────────────── -->
+  <div class="grid-wrap">
+    <div id="hover-bar">
+      <div class="hb-hand-name" id="hb-bar-hand">AKs</div>
+      <div id="hb-bar-meta" class="hb-meta"></div>
+      <div class="hb-divider"></div>
+      <div id="hb-bar-positions" class="hb-positions"></div>
+    </div>
+    <div class="grid" id="main-grid"></div>
+  </div>
+
+  <!-- RIGHT SIDEBAR ────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-title">Selection</div>
+
+      <div class="label-sm" id="texture-label">Brush</div>
+      <div class="brush-group">
+        <button id="btn-mod-Solid"   class="brush-btn btn-primary">Solid</button>
+        <button id="btn-mod-Hatched" class="brush-btn brush-btn--inactive">Hatched</button>
+      </div>
+
+      <div class="label-sm">Position</div>
+      <div id="pos-palette" class="pos-palette"></div>
+
+      <div class="label-sm mt-16">View</div>
+      <div class="flex-row gap-4 mb-12">
+        <button id="btn-view-master"   class="toggle-btn active">All</button>
+        <button id="btn-view-isolated" class="toggle-btn">Focus</button>
+      </div>
+
+      <div class="stats-divider">
+        <div class="stats-bar"><span>Position:</span><strong id="brush-name">UTG</strong></div>
+        <div class="stats-bar"><span>Combos:</span><span id="stat-combos">0 / 1326</span></div>
+        <div class="stats-bar"><span>Range %:</span><span id="stat-pct">0.0%</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Compare</div>
+      <div class="label-sm">Range A</div>
+      <select id="cmp-a" class="mb-8"></select>
+      <div class="label-sm">Range B</div>
+      <select id="cmp-b" class="mb-8"></select>
+      <div class="label-sm">Position</div>
+      <select id="cmp-pos" class="mb-10">
+        <option>UTG</option><option>HJ</option><option>CO</option><option>BTN</option><option>SB</option>
+      </select>
+      <button id="comp-btn">Run Comparison</button>
+      <div id="compare-summary" class="cmp-summary">
+        <div class="cmp-summary-row">
+          <div class="cmp-cell cmp-cell--extra">
+            <div id="cmp-extra" style="color:var(--good)">+0</div>
+            <div class="cmp-cell-label">A only</div>
+          </div>
+          <div class="cmp-cell cmp-cell--miss">
+            <div id="cmp-miss" style="color:var(--bad)">-0</div>
+            <div class="cmp-cell-label">B only</div>
+          </div>
+          <div class="cmp-cell cmp-cell--shared">
+            <div id="cmp-same" style="color:var(--text)">0</div>
+            <div class="cmp-cell-label">shared</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">GTO Ghost</div>
+      <div class="label-sm">Reference Preset</div>
+      <select id="ghost-preset" class="mb-8"></select>
+      <div class="label-sm">Position</div>
+      <select id="ghost-pos" class="mb-8"></select>
+      <div class="flex-row gap-6 mb-8" style="align-items:center;">
+        <input type="checkbox" id="ghost-follow" style="cursor:pointer;accent-color:#f5c518;">
+        <label for="ghost-follow" style="font-size:0.65rem;font-weight:700;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Follow active brush</label>
+      </div>
+      <div class="label-sm">Ghost Color</div>
+      <div class="ghost-row mb-8">
+        <input type="color" id="ghost-color" value="#f5c518" style="width:36px;height:24px;border:none;background:none;cursor:pointer;padding:0;">
+        <input type="range" id="ghost-opacity" class="ghost-slider flex-1" min="0.05" max="0.6" step="0.05" value="0.25">
+        <span class="ghost-opacity-label" id="ghost-opacity-label">25%</span>
+      </div>
+      <button id="btn-ghost">Show Ghost</button>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- ── MODALS ────────────────────────────────────────────────── -->
+
+<div class="modal-bg" id="quiz-modal">
+  <div class="modal-card modal-quiz">
+    <div id="quiz-main">
+      <div id="quiz-title-label" class="quiz-title">RANGE QUIZ</div>
+      <div id="quiz-hand" class="quiz-hand-big">AKs</div>
+      <div id="quiz-pos"  class="quiz-pos-line">POSITION: BTN</div>
+      <div class="quiz-answer-group">
+        <button id="quiz-btn-in"   class="quiz-btn-in">IN RANGE (1)</button>
+        <button id="quiz-btn-fold" class="quiz-btn-fold">FOLD (2)</button>
+      </div>
+      <div id="quiz-feedback" class="quiz-feedback">1 / ← In Range &nbsp;·&nbsp; 2 / → Fold</div>
+      <div id="quiz-score"    class="quiz-score">Score: 0 / 0</div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button id="quiz-exit"    class="quiz-exit" style="flex:1">Exit</button>
+        <button id="quiz-summary-btn" class="btn-primary" style="flex:1;padding:8px;font-size:0.7rem;font-weight:700;letter-spacing:1px;" onclick="quiz.showSummary()">Summary</button>
+      </div>
+    </div>
+    <div id="quiz-summary" style="display:none;min-width:280px;"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="export-modal">
+  <div class="modal-card modal-export">
+    <div class="card-title">Export Range</div>
+    <textarea id="export-txt" class="export-textarea"></textarea>
+    <div class="export-actions">
+      <button id="btn-png-export"    class="btn-primary flex-1 mb-0">Download PNG</button>
+      <button id="btn-copy-export"   class="btn-primary flex-2 mb-0">Copy to Clipboard</button>
+      <button id="btn-close-export"  class="flex-1 mb-0">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="import-modal">
+  <div class="modal-card modal-import">
+    <div class="card-title">Import</div>
+    <p class="import-hint">
+      Paste a full export (with <code style="color:var(--accent);">=== UTG ===</code> headers) to restore all positions and frequencies,
+      or paste a plain list like <code style="color:var(--accent);">AA, KK(75), AKs(25)</code> and pick a position below.
+      Hands without <code style="color:var(--accent);">(freq)</code> default to 100%.
+    </p>
+    <textarea id="import-txt" class="import-textarea" placeholder="Paste range here..."></textarea>
+    <div class="import-pos-row" id="import-pos-row">
+      <span class="label-sm import-pos-label">Load into:</span>
+      <select id="import-pos" class="flex-1 mb-0">
+        <option>UTG</option><option>HJ</option><option>CO</option><option>BTN</option><option>SB</option>
+      </select>
+    </div>
+    <div class="import-actions">
+      <button id="btn-confirm-import" class="btn-primary flex-2 mb-0">Import</button>
+      <button id="btn-cancel-import"  class="flex-1 mb-0">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="saveas-modal">
+  <div class="modal-card modal-saveas">
+    <div class="card-title">Save as New Preset</div>
+    <input id="saveas-input" type="text" class="saveas-input" placeholder="Preset name…">
+    <div class="flex-row gap-6 mb-12" style="align-items:center;">
+      <span class="label-sm" style="white-space:nowrap;">Freq type:</span>
+      <select id="saveas-type" class="flex-1 mb-0" onchange="updateSaveasDesc()">
+        <option value="hesitation">Hesitation [H]</option>
+        <option value="frequency">Frequency [F]</option>
+      </select>
+    </div>
+    <div id="saveas-desc" style="font-size:0.68rem;color:var(--muted);line-height:1.5;margin-bottom:12px;padding:8px 10px;background:var(--surface-2);border-radius:var(--r-sm);border:1px solid var(--border);">
+      <strong style="color:var(--text);">[H] Hesitation:</strong> Partial % means you are <em>unsure</em> whether to play this hand. Quiz will ask it less often proportionally.
+    </div>
+    <div class="saveas-actions">
+      <button id="btn-confirm-saveas" class="btn-primary flex-2 mb-0">Save</button>
+      <button id="btn-cancel-saveas"  class="flex-1 mb-0">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal-card modal-confirm">
+    <div id="confirm-message" class="confirm-message"></div>
+    <div class="confirm-actions">
+      <button id="confirm-ok"     class="btn-danger flex-1 mb-0">Confirm</button>
+      <button id="confirm-cancel" class="flex-1 mb-0">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Radio bar -->
+<div id="radio-bar">
+  <div class="radio-status">
+    <div id="radio-eq" class="radio-eq-bar">
+      <div style="animation:eq1 0.8s ease-in-out infinite;"></div>
+      <div style="animation:eq2 0.5s ease-in-out infinite;"></div>
+      <div style="animation:eq3 0.9s ease-in-out infinite;"></div>
+    </div>
+    <span id="radio-now" class="radio-now">Off</span>
+  </div>
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
+    <div class="rstation" id="rs-lofi"><span>🎧</span><span class="rstation-label">Lofi</span></div>
+    <div class="rstation" id="rs-hiphop"><span>🎤</span><span class="rstation-label">Hip Hop</span></div>
+    <div class="rstation" id="rs-ambient"><span>🌑</span><span class="rstation-label">Drone</span></div>
+    <div class="rstation" id="rs-retrowave"><span>👾</span><span class="rstation-label">Indie Game</span></div>
+    <div class="rstation" id="rs-jazz"><span>🎷</span><span class="rstation-label">Jazz</span></div>
+    <div class="rstation" id="rs-rock"><span>🎸</span><span class="rstation-label">Rock</span></div>
+    <div class="rstation" id="rs-metal"><span>🤘</span><span class="rstation-label">Metal</span></div>
+    <div class="rstation" id="rs-classical"><span>🎻</span><span class="rstation-label">Classical</span></div>
+  </div>
+  <div class="radio-vol-group">
+    <span class="radio-vol-label">VOL</span>
+    <input id="radio-vol" type="range" min="0" max="1" step="0.05" value="0.6" class="radio-vol-input">
+  </div>
+</div>
+
+<div class="radio-spacer"></div>
+
+<audio id="radio-audio" preload="none" crossorigin="anonymous"></audio>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════
+// GTO Range Builder  ·  v31.0  ·  Clean Edition
+//
+// Architecture: each concern lives in its own plain object/module.
+// No duplicate event listeners. No global mutable audio references.
+// No blocking dialog APIs (alert/confirm/prompt replaced with modals).
+// Clipboard uses the modern async API with execCommand fallback.
+//
+// Data schema
+//   ranges.RFI[hand]        = Set<'POSITION' | 'POSITION_Hatched'>
+//   ranges.DEF_SPOT[hand]   = Set<'Raise' | 'Call' | 'Raise_Hatched' | 'Call_Hatched'>
+//   ranges.DEF_MASTER[hand] = Set<'POSITION_Raise' | 'POSITION_Call'>
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Constants ───────────────────────────────────────────────────────
+const RANKS           = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+const POSITIONS       = ['UTG','HJ','CO','BTN','SB'];
+const DEF_OPS         = ['Raise','Call'];
+const DEF_MASTER_POS  = ['UTG','HJ','CO','BTN','SB','BB'];
+const STORAGE_KEY     = 'v9_all_presets';
+const ALL_HANDS       = [];  // populated in init()
+const COMBO_WEIGHTS   = {};  // precomputed in init() after ALL_HANDS is filled
+
+// ── Skin definitions ────────────────────────────────────────────────
+const SKINS = {
+  default: {
+    '--skin-radius':        '6px',
+    '--skin-gap':           '4px',
+    '--skin-empty':         '#161922',
+    '--skin-empty-border':  '1px solid #1f2438',
+    '--skin-label-size':    '10px',
+    '--skin-label-weight':  '700',
+    '--skin-label-family':  "'Inter', sans-serif",
+    '--skin-label-opacity': '1',
+    '--skin-label-align':   'center',
+    '--skin-label-justify': 'center',
+    '--skin-label-pad':     '0px',
+    '--skin-cell-shadow':   'none',
+    '--skin-grid-bg':       '#0e1018',
+    '--skin-grid-pad':      '8px',
+    '--skin-label-color':   'rgba(255,255,255,0.9)',
+    '--skin-aspect':        '1 / 1',
+  },
+  pio: {
+    '--skin-radius':        '0px',
+    '--skin-gap':           '2px',
+    '--skin-empty':         '#1a1a1a',
+    '--skin-empty-border':  '1px solid #2a2a2a',
+    '--skin-label-size':    '8px',
+    '--skin-label-weight':  '400',
+    '--skin-label-family':  "'JetBrains Mono', monospace",
+    '--skin-label-opacity': '0.65',
+    '--skin-label-align':   'flex-end',
+    '--skin-label-justify': 'flex-start',
+    '--skin-label-pad':     '1px 2px',
+    '--skin-cell-shadow':   'none',
+    '--skin-grid-bg':       '#0a0a0a',
+    '--skin-grid-pad':      '3px',
+    '--skin-label-color':   'rgba(255,255,255,0.6)',
+    '--skin-aspect':        '1 / 1',
+  },
+  wizard: {
+    '--skin-radius':        '0px',
+    '--skin-gap':           '1px',
+    '--skin-empty':         '#1e1e1e',
+    '--skin-empty-border':  'none',
+    '--skin-label-size':    '9px',
+    '--skin-label-weight':  '500',
+    '--skin-label-family':  "'Inter', sans-serif",
+    '--skin-label-opacity': '1',
+    '--skin-label-align':   'center',
+    '--skin-label-justify': 'center',
+    '--skin-label-pad':     '0px',
+    '--skin-cell-shadow':   'none',
+    '--skin-grid-bg':       '#111111',
+    '--skin-grid-pad':      '3px',
+    '--skin-label-color':   '#ffffff',
+    '--skin-aspect':        '65 / 58',
+  }
+};
+
+// ── Colour themes ────────────────────────────────────────────────────
+const THEMES = {
+  gto:    { UTG:'#ff4d4d', HJ:'#ff7700', CO:'#ffe600', BTN:'#1fd98a', SB:'#4da6ff', BB:'#b266ff', Raise:'#ff4d7a', Call:'#1fd98a' },
+  safe:   { UTG:'#e6194b', HJ:'#f58231', CO:'#ffe119', BTN:'#bfef45', SB:'#4363d8', BB:'#911eb4', Raise:'#e6194b', Call:'#4363d8' },
+  heat:   { UTG:'#b30000', HJ:'#e60000', CO:'#ff3333', BTN:'#ff6666', SB:'#ff9999', BB:'#7a0177', Raise:'#b30000', Call:'#ff9999' },
+  wizard: { UTG:'#e94041', HJ:'#e94041', CO:'#e94041', BTN:'#427eb8', SB:'#427eb8', BB:'#427eb8', Raise:'#e94041', Call:'#427eb8' },
+  chart:  { UTG:'#e63946', HJ:'#f4a261', CO:'#e9c46a', BTN:'#2dc653', SB:'#4895ef', BB:'#9b5de5', Raise:'#e63946', Call:'#2dc653' }
+};
+
+// ── Built-in preset data ─────────────────────────────────────────────
+// Empty — build your own ranges and save them. They persist via localStorage.
+const BUILTIN_RFI = {
+  san_range: {
+    name: 'San Range',
+    presetType: 'hesitation',
+    UTG: ['AA','AKs','AQs','AJs','ATs','A9s','A5s','A4s','AKo','KK','KQs','KJs','KTs','AQo','QQ','QJs','AJo','JJ','TT','99','88'],
+    HJ:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A5s','A4s','A3s','AKo','KK','KQs','KJs','KTs','K9s','AQo','KQo','QQ','QJs','QTs','AJo','KJo','JJ','JTs','TT','T9s','99','88','77'],
+    CO:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','AQo','KQo','QQ','QJs','QTs','Q9s','AJo','KJo','QJo','JJ','JTs','J9s','ATo','KTo','TT','T9s','T8s','99','98s','88','87s','77','66','55'],
+    BTN: ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','AQo','KQo','QQ','QJs','QTs','Q9s','Q8s','Q7s','AJo','KJo','QJo','JJ','JTs','J9s','J8s','J7s','ATo','KTo','QTo','JTo','TT','T9s','T8s','T7s','A9o','K9o','T9o','99','98s','97s','A8o','88','87s','86s','A7o','77','76s','75s','66','65s','55','44','33','22'],
+    SB:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','K7s','K6s','AQo','KQo','QQ','QJs','QTs','Q9s','Q8s','AJo','KJo','QJo','JJ','JTs','J9s','J8s','ATo','KTo','QTo','JTo','TT','T9s','T8s','T7s','A9o','K9o','T9o','99','98s','97s','A8o','88','87s','A7o','77','76s','A6o','66','65s','55','44','33','22']
+  },
+  gto_wizard_nl25: {
+    name: 'GTO Wizard NL25',
+    presetType: 'frequency',
+    UTG: ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A5s','A4s','AKo','KK','KQs','KJs','KTs','K9s','AQo','KQo','QQ','QJs','QTs','AJo','JJ','JTs','TT','T9s','99','98s','88','77'],
+    HJ:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','AQo','KQo','QQ','QJs','QTs','Q9s','AJo','KJo','JJ','JTs','J9s','ATo','KTo','TT','T9s','T8s','99','98s','88','87s','77','76s','66','55'],
+    CO:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','K7s','K6s','AQo','KQo','QQ','QJs','QTs','Q9s','Q8s','AJo','KJo','QJo','JJ','JTs','J9s','J8s','ATo','KTo','QTo','JTo','TT','T9s','T8s','T7s','A9o','K9o','99','98s','97s','88','87s','86s','77','76s','66','65s','55','44','33','22'],
+    BTN: ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','AQo','KQo','QQ','QJs','QTs','Q9s','Q8s','Q7s','Q6s','AJo','KJo','QJo','JJ','JTs','J9s','J8s','J7s','ATo','KTo','QTo','JTo','TT','T9s','T8s','T7s','T6s','A9o','K9o','Q9o','J9o','T9o','99','98s','97s','96s','A8o','K8o','T8o','98o','88','87s','86s','A7o','77','76s','75s','A6o','66','65s','64s','55','54s','44','33','22'],
+    SB:  ['AA','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','AKo','KK','KQs','KJs','KTs','K9s','K8s','K7s','K6s','AQo','KQo','QQ','QJs','QTs','Q9s','Q8s','Q7s','AJo','KJo','QJo','JJ','JTs','J9s','J8s','J7s','ATo','KTo','QTo','JTo','TT','T9s','T8s','T7s','A9o','K9o','Q9o','J9o','T9o','99','98s','97s','96s','A8o','K8o','T8o','98o','88','87s','86s','A7o','77','76s','75s','A6o','66','65s','A5o','55','44','33','22']
+  }
+};
+const BUILTIN_DEF        = {};
+const BUILTIN_DEF_MASTER = {};
+
+// ═══════════════════════════════════════════════════════════════════
+// APP STATE  — mutate only via setState() so changes are traceable
+// ═══════════════════════════════════════════════════════════════════
+const state = {
+  colors:       THEMES.gto,
+  appMode:      'RFI',        // 'RFI' | 'DEF_SPOT' | 'DEF_MASTER'
+  activeBrush:  'UTG',
+  viewMode:     'master',     // 'master' | 'isolated'
+  renderStyle:  'stripes',
+  brushTexture: 'Solid',      // 'Solid' | 'Hatched'
+  compareMode:  false,
+  paintMode:    null,         // 'add' | 'remove'
+  isMouseDown:  false,
+  gtoColor:     '#f5c518',    // GTO brush color — user-editable via color picker
+  ghost: {
+    active:  false,
+    preset:  null,   // key of the reference preset
+    pos:     'UTG',  // which position to ghost
+    opacity: 0.25,
+    color:   '#f5c518',
+  },
+};
+
+/**
+ * Merge partial updates into state.
+ * All mutations go through here — easier to debug, easy to add logging.
+ * @param {Partial<typeof state>} patch
+ */
+function setState(patch) {
+  Object.assign(state, patch);
+}
+
+// Per-mode range stores: hand → Set<string>
+const ranges = {
+  RFI:        {},
+  DEF_SPOT:   {},
+  DEF_MASTER: {},
+};
+
+// freq[mode][hand][brushKey] = 100 | 75 | 50 | 25
+const freq = { RFI: {}, DEF_SPOT: {}, DEF_MASTER: {} };
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+
+function getRanges()  { return ranges[state.appMode]; }
+function getList()    {
+  return state.appMode === 'RFI'        ? POSITIONS :
+         state.appMode === 'DEF_SPOT'   ? DEF_OPS   : DEF_MASTER_POS;
+}
+function getBrushKey() {
+  if (state.appMode === 'DEF_MASTER') {
+    return `${state.activeBrush}_${state.brushTexture === 'Solid' ? 'Raise' : 'Call'}`;
+  }
+  return state.brushTexture === 'Hatched'
+    ? `${state.activeBrush}_Hatched`
+    : state.activeBrush;
+}
+function comboWeight(h) {
+  if (h.length === 2) return 6;
+  return h.endsWith('s') ? 4 : 12;
+}
+
+// ── Storage helpers ──────────────────────────────────────────────────
+function loadStorage()  {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch(e) { console.warn('Storage read failed:', e); return {}; }
+}
+function saveStorage(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function seedBuiltins() {
+  const store = loadStorage();
+  // Always restore builtins to their original state — they are protected presets
+  Object.entries(BUILTIN_RFI).forEach(([k, preset]) => {
+    const { name, presetType, ...data } = preset;
+    store[k] = { name, mode: 'RFI', presetType: presetType ?? 'hesitation', data };
+  });
+  Object.entries(BUILTIN_DEF).forEach(([k, data]) => {
+    store[k] = { name: k, mode: 'DEF_SPOT', data };
+  });
+  Object.entries(BUILTIN_DEF_MASTER).forEach(([k, data]) => {
+    store[k] = { name: k, mode: 'DEF_MASTER', data };
+  });
+  saveStorage(store);
+}
+
+function getPresetData(key) {
+  if (!key) return null;
+  return loadStorage()[key]?.data ?? null;
+}
+
+// ── Dropdown management ──────────────────────────────────────────────
+function rebuildDropdowns() {
+  const store = loadStorage();
+
+  // Main preset selector: only current mode
+  const sel = $('preset-sel');
+  if (sel) {
+    const prev = sel.value;
+    sel.innerHTML = '';
+    Object.entries(store).forEach(([k, item]) => {
+      if (!item || item.mode !== state.appMode) return;
+      const o = document.createElement('option');
+      o.value = k;
+      const typeTag = item.presetType === 'frequency' ? ' [F]' : ' [H]';
+      o.textContent = (item.savedAt ? `${item.name}  (${item.savedAt})` : item.name) + typeTag;
+      sel.appendChild(o);
+    });
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+
+  // Quiz selector: all presets
+  const quizSel = $('quiz-preset-sel');
+  if (quizSel) {
+    quizSel.innerHTML = '';
+    Object.entries(store).forEach(([k, item]) => {
+      if (!item?.mode) return;
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = (item.mode !== 'RFI' ? `[${item.mode.replace('DEF_','')}] ` : '') + item.name;
+      quizSel.appendChild(o);
+    });
+  }
+
+  // Ghost preset dropdown: all presets
+  const ghostSel = $('ghost-preset');
+  if (ghostSel) {
+    const prevGhost = ghostSel.value;
+    ghostSel.innerHTML = '<option value="">— off —</option>';
+    Object.entries(store).forEach(([k, item]) => {
+      if (!item?.mode) return;
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = (item.mode !== 'RFI' ? `[${item.mode.replace('DEF_','')}] ` : '') + item.name;
+      ghostSel.appendChild(o);
+    });
+    if ([...ghostSel.options].some(o => o.value === prevGhost)) ghostSel.value = prevGhost;
+    // Rebuild ghost-pos to match the current preset's mode
+    _rebuildGhostPos(ghostSel.value || null);
+  }
+
+  // Compare dropdowns: all presets
+  ['cmp-a', 'cmp-b'].forEach((id, i) => {
+    const el = $(id);
+    if (!el) return;
+    const prevVal = el.value;
+    el.innerHTML = '';
+    Object.entries(store).forEach(([k, item]) => {
+      if (!item?.mode) return;
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = (item.mode !== 'RFI' ? `[${item.mode.replace('DEF_','')}] ` : '') + item.name;
+      el.appendChild(o);
+    });
+    if ([...el.options].some(o => o.value === prevVal)) el.value = prevVal;
+    else if (el.options.length > 0) el.selectedIndex = (i === 1 && el.options.length > 1) ? 1 : 0;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+function init() {
+  // Build 13×13 grid
+  const g = $('main-grid');
+  for (let i = 0; i < 13; i++) {
+    for (let j = 0; j < 13; j++) {
+      const h = i === j ? RANKS[i]+RANKS[j]
+              : i < j   ? RANKS[i]+RANKS[j]+'s'
+                         : RANKS[j]+RANKS[i]+'o';
+      ALL_HANDS.push(h);
+      ranges.RFI[h]        = new Set();
+      ranges.DEF_SPOT[h]   = new Set();
+      ranges.DEF_MASTER[h] = new Set();
+      freq.RFI[h]          = {};
+      freq.DEF_SPOT[h]     = {};
+      freq.DEF_MASTER[h]   = {};
+
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = 'c-' + h;
+      cell.innerHTML = `<div class="cell-stripes" id="s-${h}"></div><div class="cell-label">${h}</div>`;
+
+      cell.addEventListener('mousedown', () => {
+        // paintMode stays null on mousedown — set only when drag enters another cell
+        setState({ isMouseDown: true, paintMode: null });
+        toggleHand(h);  // single click: cycles freq
+      });
+      cell.addEventListener('mouseenter', () => {
+        showHover(h);
+        if (state.isMouseDown) {
+          // First cell entered while dragging — lock paint direction
+          if (!state.paintMode) {
+            setState({ paintMode: getRanges()[h].has(getBrushKey()) ? 'remove' : 'add' });
+          }
+          toggleHand(h);
+        }
+      });
+      cell.addEventListener('mouseleave', clearHover);
+      g.appendChild(cell);
+    }
+  }
+
+  // Precompute combo weights (ALL_HANDS now fully populated)
+  ALL_HANDS.forEach(h => { COMBO_WEIGHTS[h] = comboWeight(h); });
+
+  document.addEventListener('mouseup', () => {
+    setState({ isMouseDown: false, paintMode: null });
+  });
+
+  // Wire keyboard shortcuts — registered exactly once here
+  document.addEventListener('keydown', handleKeyDown);
+
+  // Wire confirm modal OK button (single listener, callback-driven)
+  _initConfirmModal();
+
+  // ── Bind all UI events (replaces every onclick= attribute) ────────
+  // Top controls
+  $('skin-default').addEventListener('click', () => setSkin('default'));
+  $('skin-pio').addEventListener('click',     () => setSkin('pio'));
+  $('skin-wizard').addEventListener('click',  () => setSkin('wizard'));
+
+  document.querySelectorAll('.theme-btn').forEach(btn =>
+    btn.addEventListener('click', () => setTheme(btn.dataset.theme))
+  );
+
+  $('btn-style-stripes').addEventListener('click',    () => setStyle('stripes'));
+  $('btn-style-horizontal').addEventListener('click', () => setStyle('horizontal'));
+  $('btn-style-dots').addEventListener('click',       () => setStyle('dots'));
+
+  // Mode
+  $('mode-rfi').addEventListener('click',        () => setMode('RFI'));
+  $('mode-def-spot').addEventListener('click',   () => setMode('DEF_SPOT'));
+  $('mode-def-master').addEventListener('click', () => setMode('DEF_MASTER'));
+
+  // Chart library
+  $('btn-load').addEventListener('click',   loadPreset);
+  $('btn-save').addEventListener('click',   quickSave);
+  $('btn-saveas').addEventListener('click', saveAsNew);
+  $('btn-export').addEventListener('click', openExport);
+  $('btn-clear').addEventListener('click',  clearGrid);
+  $('btn-delete').addEventListener('click', deleteSelectedPreset);
+  $('btn-import').addEventListener('click', openImport);
+
+  // Quiz
+  $('btn-quiz').addEventListener('click', () => quiz.open());
+
+  // Brush texture
+  $('btn-mod-Solid').addEventListener('click',   () => setTexture('Solid'));
+  $('btn-mod-Hatched').addEventListener('click', () => setTexture('Hatched'));
+
+  // View mode
+  $('btn-view-master').addEventListener('click',   () => setViewMode('master'));
+  $('btn-view-isolated').addEventListener('click', () => setViewMode('isolated'));
+
+  // Compare
+  $('comp-btn').addEventListener('click', toggleCompare);
+
+  // Ghost
+  $('btn-ghost').addEventListener('click',         toggleGhost);
+  $('ghost-preset').addEventListener('change',     updateGhostPreset);
+  $('ghost-pos').addEventListener('change',        updateGhostPos);
+  $('ghost-follow').addEventListener('change', e => {
+    if (e.target.checked) {
+      // Immediately sync to active brush
+      const sel = $('ghost-pos');
+      if (sel && [...sel.options].some(o => o.value === state.activeBrush)) {
+        sel.value = state.activeBrush;
+        updateGhostPos();
+      }
+    }
+  });
+  $('ghost-color').addEventListener('input',    e => updateGhostColor(e.target.value));
+  $('ghost-opacity').addEventListener('input',  e => updateGhostOpacity(e.target.value));
+
+  // Export modal
+  $('btn-png-export').addEventListener('click',   exportPNG);
+  $('btn-copy-export').addEventListener('click',  () => copyExport($('btn-copy-export')));
+  $('btn-close-export').addEventListener('click', closeModals);
+
+  // Import modal
+  $('btn-confirm-import').addEventListener('click', confirmImport);
+  $('btn-cancel-import').addEventListener('click',  closeModals);
+
+  // Save-as modal
+  $('btn-confirm-saveas').addEventListener('click', confirmSaveAs);
+  $('btn-cancel-saveas').addEventListener('click',  closeModals);
+  $('saveas-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmSaveAs(); });
+
+  // Confirm modal
+  $('confirm-cancel').addEventListener('click', closeModals);
+
+  // Quiz modal
+  $('quiz-btn-in').addEventListener('click',   () => quiz.answer(true));
+  $('quiz-btn-fold').addEventListener('click',  () => quiz.answer(false));
+  $('quiz-exit').addEventListener('click',         () => quiz.close());
+
+  // Radio stations + volume
+  ['lofi','hiphop','ambient','retrowave','jazz','rock','metal','classical']
+    .forEach(id => $('rs-' + id)?.addEventListener('click', () => radio.play(id)));
+  $('radio-vol').addEventListener('input',    e  => radio.setVolume(e.target.value));
+
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal-bg').forEach(modal =>
+    modal.addEventListener('click', e => { if (e.target === modal) closeModals(); })
+  );
+
+  seedBuiltins();
+  rebuildDropdowns();
+  setMode('RFI');
+
+  // Init radio — audio element already exists in DOM
+  radio.init();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODE & UI STATE
+// ═══════════════════════════════════════════════════════════════════
+function setMode(m) {
+  setState({ appMode: m });
+
+  const modeMap = { RFI:'mode-rfi', DEF_SPOT:'mode-def-spot', DEF_MASTER:'mode-def-master' };
+  Object.entries(modeMap).forEach(([mode, id]) => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.className = mode === m ? 'btn-primary' : '';
+    btn.style.marginBottom = '0';
+  });
+
+  if (m !== 'RFI') setState({ viewMode: 'master' });
+  if (!getList().includes(state.activeBrush)) setState({ activeBrush: getList()[0] });
+
+  // Update brush label & button text
+  const tLabel = $('texture-label');
+  const btnS   = $('btn-mod-Solid');
+  const btnH   = $('btn-mod-Hatched');
+  if (tLabel) tLabel.textContent = m === 'DEF_MASTER' ? 'Action' : 'Brush';
+  if (btnS)   btnS.textContent   = m === 'DEF_MASTER' ? '3-Bet (Solid)'   : 'Solid';
+  if (btnH)   btnH.textContent   = m === 'DEF_MASTER' ? 'Call (Hatched)'  : 'Hatched';
+
+  buildPalette();
+  setTexture(state.brushTexture);
+  rebuildDropdowns();
+
+  // Auto-load first preset for this mode
+  const sel = $('preset-sel');
+  if (sel?.options.length > 0) {
+    sel.selectedIndex = 0;
+    loadPreset();
+  } else {
+    refreshAll();
+  }
+}
+
+function setTheme(t) {
+  setState({ colors: THEMES[t] });
+  document.querySelectorAll('.theme-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.theme === t)
+  );
+  buildPalette();
+  refreshAll();
+}
+
+function setStyle(s) {
+  setState({ renderStyle: s });
+  ['stripes','horizontal','dots'].forEach(x =>
+    $('btn-style-' + x).className = 'toggle-btn' + (x === s ? ' active' : '')
+  );
+  refreshAll();
+}
+
+function setViewMode(m) {
+  setState({ viewMode: m });
+  $('btn-view-master').className   = 'toggle-btn' + (m === 'master'   ? ' active' : '');
+  $('btn-view-isolated').className = 'toggle-btn' + (m === 'isolated' ? ' active' : '');
+  refreshAll();
+}
+
+function setTexture(t) {
+  setState({ brushTexture: t });
+
+  const btnS = $('btn-mod-Solid');
+  const btnH = $('btn-mod-Hatched');
+
+  if (btnS) {
+    btnS.className = t === 'Solid' ? 'btn-primary' : '';
+    // Reset inline styles so CSS classes take over cleanly
+    btnS.removeAttribute('style');
+    btnS.style.flex         = '1';
+    btnS.style.marginBottom = '0';
+    btnS.style.fontSize     = '0.7rem';
+    btnS.style.padding      = '7px';
+    if (t !== 'Solid') {
+      btnS.style.background = 'var(--surface-2)';
+      btnS.style.border     = '1px solid var(--border)';
+    }
+  }
+  if (btnH) {
+    btnH.className = t === 'Hatched' ? 'btn-primary' : '';
+    btnH.removeAttribute('style');
+    btnH.style.flex         = '1';
+    btnH.style.marginBottom = '0';
+    btnH.style.fontSize     = '0.7rem';
+    btnH.style.padding      = '7px';
+    if (t !== 'Hatched') {
+      btnH.style.background = 'var(--surface-2)';
+      btnH.style.border     = '1px solid var(--border)';
+    }
+  }
+}
+
+function setActiveBrush(p) {
+  setState({ activeBrush: p });
+  // Sync ghost position only when "follow brush" checkbox is checked
+  if ($('ghost-follow')?.checked) {
+    const ghostSel = $('ghost-pos');
+    if (ghostSel && [...ghostSel.options].some(o => o.value === p)) {
+      ghostSel.value = p;
+      setState({ ghost: { ...state.ghost, pos: p } });
+    }
+  }
+  refreshAll();
+}
+
+function setSkin(s) {
+  const skin = SKINS[s];
+  if (!skin) return;
+  const root = document.documentElement;
+  Object.entries(skin).forEach(([k, v]) => root.style.setProperty(k, v));
+  document.querySelectorAll('.skin-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.skin === s)
+  );
+}
+
+function buildPalette() {
+  const pal = $('pos-palette');
+  if (!pal) return;
+  const list  = getList();
+  const store = getRanges();
+  pal.style.gridTemplateColumns = state.appMode === 'DEF_MASTER' ? '1fr 1fr 1fr' : '1fr 1fr';
+  pal.innerHTML = '';
+
+  list.forEach(p => {
+    let combos = 0;
+    const fMapP = freq[state.appMode];
+    if (state.appMode === 'DEF_MASTER') {
+      ALL_HANDS.forEach(h => {
+        const kR = `${p}_Raise`, kC = `${p}_Call`;
+        if (store[h].has(kR)) combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[kR] ?? 100) / 100);
+        if (store[h].has(kC)) combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[kC] ?? 100) / 100);
+      });
+    } else {
+      ALL_HANDS.forEach(h => {
+        if (store[h].has(p))               combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[p]               ?? 100) / 100);
+        if (store[h].has(`${p}_Hatched`))  combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[`${p}_Hatched`]  ?? 100) / 100);
+      });
+    }
+    const pct  = ((combos / 1326) * 100).toFixed(1);
+    const color = state.colors[p] ?? '#fff';
+    const isActive = state.activeBrush === p;
+
+    const d = document.createElement('div');
+    d.className = 'pos-pill' + (isActive ? ' active' : '');
+    d.id = 'pill-' + p;
+    if (state.appMode === 'RFI' && p === 'SB') d.style.gridColumn = 'span 2';
+    d.innerHTML = `
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
+      <div style="font-weight:800;font-size:0.75rem;flex:1;">${p}</div>
+      <div style="font-size:0.65rem;color:${combos > 0 ? color : 'var(--dim)'};font-weight:700;font-family:'JetBrains Mono';">${pct}%</div>
+    `;
+    d.addEventListener('click', () => setActiveBrush(p));
+    pal.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GRID RENDERING
+// ═══════════════════════════════════════════════════════════════════
+function toggleHand(h) {
+  const set  = getRanges()[h];
+  const fMap = freq[state.appMode][h];
+  const key  = getBrushKey();
+
+  // Cycle: empty → 100 → 12.5 → 25 → 50 → 75 → erase (back to empty)
+  const STEPS = [100, 12.5, 25, 50, 75];
+
+  const isHatched = key.endsWith('_Hatched');
+
+  if (state.paintMode === 'add') {
+    set.add(key);
+    if (!isHatched) fMap[key] = 100;
+  } else if (state.paintMode === 'remove') {
+    set.delete(key);
+    delete fMap[key];
+  } else if (isHatched) {
+    // Hatched is binary: one click on, next click off
+    if (set.has(key)) {
+      set.delete(key);
+      delete fMap[key];
+    } else {
+      set.add(key);
+    }
+  } else {
+    if (!set.has(key)) {
+      // Empty → first click: 100%
+      set.add(key);
+      fMap[key] = 100;
+    } else {
+      const cur = fMap[key] ?? 100;
+      const idx = STEPS.indexOf(cur);
+      if (idx === STEPS.length - 1) {
+        // Last step (75%) → erase completely, as if never clicked
+        set.delete(key);
+        delete fMap[key];
+      } else {
+        fMap[key] = STEPS[idx + 1];
+      }
+    }
+  }
+  renderCell(h, _buildDiffCache());
+  updateStats();
+}
+
+function renderCell(h, diff) {
+  const cell    = $('c-' + h);
+  const stripes = $('s-' + h);
+  if (!cell || !stripes) return;
+
+  // Reset
+  stripes.innerHTML = '';
+  cell.classList.remove('diff-extra', 'diff-miss', 'dimmed');
+  cell.style.borderColor = 'transparent';
+
+  // ── Ghost layer ────────────────────────────────────────────────
+  // Remove any existing ghost div first
+  const oldGhost = cell.querySelector('.cell-ghost');
+  if (oldGhost) oldGhost.remove();
+  if (state.ghost.active && state.ghost.preset) {
+    const gd   = getPresetData(state.ghost.preset);
+    const inGTO = gd?.[state.ghost.pos]?.includes(h) ?? false;
+    if (inGTO) {
+      const g = document.createElement('div');
+      g.className = 'cell-ghost';
+      g.style.setProperty('--ghost-color',   state.ghost.color);
+      g.style.setProperty('--ghost-opacity', state.ghost.opacity);
+      cell.appendChild(g);
+    }
+  }
+
+  // Stripe container style
+  stripes.className = `cell-stripes ${state.viewMode === 'master' ? `style-${state.renderStyle}` : 'style-stripes'}`;
+
+  // All-5-positions dim white — View All + RFI only
+  if (state.appMode === 'RFI' && state.viewMode === 'master') {
+    const set = getRanges()[h];
+    const _fMapGrey = freq[state.appMode][h] ?? {};
+    const allIn = POSITIONS.every(p => set.has(p) && (_fMapGrey[p] ?? 100) === 100);
+    if (allIn) {
+      const fill = document.createElement('div');
+      fill.className = 'cell-all-in-fill';
+      stripes.appendChild(fill);
+      _applyDimming(cell, h);
+      _applyDiffMarks(cell, h, diff);
+      return;
+    }
+  }
+
+  // Draw stripes via pure helper
+  const _fMap = freq[state.appMode][h] ?? {};
+  _getStripeItems(h).forEach(({ colorKey, hatched }) => {
+    const s     = document.createElement('div');
+    s.className = 'stripe';
+    const color = colorKey === 'GTO' ? state.gtoColor : (state.colors[colorKey] ?? '#fff');
+    const bk = state.appMode === 'DEF_MASTER'
+      ? `${colorKey}_${hatched ? 'Call' : 'Raise'}`
+      : hatched ? `${colorKey}_Hatched` : colorKey;
+    const f = _fMap[bk] ?? 100;
+    if (hatched) {
+      // Hatched is binary — always full pattern, no frequency
+      s.style.background = `repeating-linear-gradient(45deg,${color},${color} 3px,transparent 3px,transparent 6px)`;
+    } else if (f < 100) {
+      // Partial fill: color rises from bottom by f%
+      s.style.background = `linear-gradient(to right, ${color} ${f}%, transparent ${f}%)`;
+    } else {
+      s.style.backgroundColor = color;
+    }
+    stripes.appendChild(s);
+  });
+
+  _applyDimming(cell, h);
+  _applyDiffMarks(cell, h, diff);
+}
+
+/**
+ * Pure — returns stripe descriptor array for hand h.
+ * No DOM side-effects, easy to unit-test.
+ */
+function _getStripeItems(h) {
+  const set   = getRanges()[h];
+  const items = [];
+
+  if (state.appMode !== 'DEF_MASTER') {
+    if (state.viewMode === 'master') {
+      getList().forEach(p => {
+        if (set.has(p))              items.push({ colorKey: p, hatched: false });
+        if (set.has(`${p}_Hatched`)) items.push({ colorKey: p, hatched: true  });
+      });
+      // GTO brush always visible in master view
+      if (set.has('GTO')) items.push({ colorKey: 'GTO', hatched: false });
+    } else {
+      if (set.has(state.activeBrush))              items.push({ colorKey: state.activeBrush, hatched: false });
+      if (set.has(`${state.activeBrush}_Hatched`)) items.push({ colorKey: state.activeBrush, hatched: true  });
+      // GTO visible in isolated view only when it is the active brush
+      if (state.activeBrush !== 'GTO' && set.has('GTO')) items.push({ colorKey: 'GTO', hatched: false });
+    }
+  } else {
+    if (state.viewMode === 'master') {
+      [...set]
+        .sort((a, b) => {
+          const [pa, aa] = a.split('_'), [pb] = b.split('_');
+          if (pa !== pb) return DEF_MASTER_POS.indexOf(pa) - DEF_MASTER_POS.indexOf(pb);
+          return aa === 'Raise' ? -1 : 1;
+        })
+        .forEach(item => {
+          const [pos, act] = item.split('_');
+          items.push({ colorKey: pos, hatched: act !== 'Raise' });
+        });
+    } else {
+      const key = getBrushKey();
+      if (set.has(key)) items.push({ colorKey: state.activeBrush, hatched: state.brushTexture !== 'Solid' });
+    }
+  }
+  return items;
+}
+
+/** Applies .dimmed or accent border for isolated view. */
+function _applyDimming(cell, h) {
+  if (state.viewMode !== 'isolated') return;
+  const set     = getRanges()[h];
+  const visible = state.appMode === 'DEF_MASTER'
+    ? set.has(getBrushKey())
+    : set.has(state.activeBrush) || set.has(`${state.activeBrush}_Hatched`);
+  if (!visible) cell.classList.add('dimmed');
+  else          cell.style.borderColor = (state.activeBrush === 'GTO' ? state.gtoColor : state.colors[state.activeBrush]) ?? 'transparent';
+}
+
+/** Adds diff-extra / diff-miss compare highlights.
+ *  diff = { setA, setB } pre-cached by caller — avoids storage reads per cell.
+ */
+function _applyDiffMarks(cell, h, diff) {
+  if (!diff) return;
+  const inA = diff.setA.has(h);
+  const inB = diff.setB.has(h);
+  if ( inA && !inB) cell.classList.add('diff-extra');
+  if (!inA &&  inB) cell.classList.add('diff-miss');
+}
+
+/** Build diff cache once per refresh — replaces 338 storage reads with 2. */
+function _buildDiffCache() {
+  if (!state.compareMode) return null;
+  const pos = $('cmp-pos')?.value ?? 'UTG';
+  const dA  = getPresetData($('cmp-a')?.value);
+  const dB  = getPresetData($('cmp-b')?.value);
+  return {
+    setA: new Set(dA?.[pos] ?? []),
+    setB: new Set(dB?.[pos] ?? []),
+  };
+}
+
+function updateStats() {
+  const key   = getBrushKey();
+  const store = getRanges();
+  const fMap  = freq[state.appMode];
+  let combos  = 0;
+  ALL_HANDS.forEach(h => {
+    if (store[h].has(key)) {
+      const f = (fMap[h]?.[key] ?? 100) / 100;
+      combos += COMBO_WEIGHTS[h] * f;
+    }
+  });
+  combos = Math.round(combos * 10) / 10;
+  const pct = ((combos / 1326) * 100).toFixed(1);
+
+  const brushLabel = state.appMode === 'DEF_MASTER'
+    ? `${state.activeBrush} ${state.brushTexture === 'Solid' ? '3B' : 'Call'}`
+    : state.activeBrush;
+
+  const brushName = $('brush-name');
+  const statCombos = $('stat-combos');
+  const statPct    = $('stat-pct');
+  if (brushName)  brushName.textContent  = brushLabel;
+  if (statCombos) statCombos.textContent = `${combos} / 1326`;
+  if (statPct)    statPct.textContent    = `${pct}%`;
+
+  buildPalette();
+}
+
+function refreshAll() {
+  const diff = _buildDiffCache(); // 2 storage reads total instead of 338
+  ALL_HANDS.forEach(h => renderCell(h, diff));
+  updateStats();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PRESET ACTIONS
+// ═══════════════════════════════════════════════════════════════════
+function loadPreset() {
+  const key  = $('preset-sel')?.value;
+  if (!key) return;
+  const data = getPresetData(key);
+  if (!data) return;
+  clearGrid(false);
+  const store = getRanges();
+  const fMap  = freq[state.appMode];
+  Object.entries(data).forEach(([k, hands]) => {
+    if (!Array.isArray(hands)) return;
+    hands.forEach(h => { if (store[h]) store[h].add(k); });
+  });
+  // Restore __freq
+  if (data.__freq) {
+    Object.entries(data.__freq).forEach(([h, byKey]) => {
+      if (!fMap[h]) fMap[h] = {};
+      Object.entries(byKey).forEach(([k, v]) => { fMap[h][k] = v; });
+    });
+  }
+  refreshAll();
+}
+
+function clearGrid(andRefresh = true) {
+  ALL_HANDS.forEach(h => { 
+    getRanges()[h].clear(); 
+    const fMap = freq[state.appMode]; 
+    if (fMap[h]) fMap[h] = {}; 
+  });
+  if (andRefresh) refreshAll();
+}
+
+function collectGridData() {
+  const store = getRanges();
+  const fMap  = freq[state.appMode];
+  const keys  = [];
+  if      (state.appMode === 'DEF_MASTER') DEF_MASTER_POS.forEach(p => { keys.push(`${p}_Raise`); keys.push(`${p}_Call`); });
+  else if (state.appMode === 'DEF_SPOT')   DEF_OPS.forEach(p => { keys.push(p); keys.push(`${p}_Hatched`); });
+  else                                     POSITIONS.forEach(p => { keys.push(p); keys.push(`${p}_Hatched`); });
+  const data = {};
+  keys.forEach(k => { data[k] = ALL_HANDS.filter(h => store[h].has(k)); });
+  // Save freq map — only non-100 values to keep it compact
+  const freqData = {};
+  ALL_HANDS.forEach(h => {
+    const hf = fMap[h];
+    if (!hf) return;
+    const filtered = {};
+    Object.entries(hf).forEach(([k, v]) => { if (v !== 100) filtered[k] = v; });
+    if (Object.keys(filtered).length) freqData[h] = filtered;
+  });
+  data.__freq = freqData;
+  return data;
+}
+
+function quickSave() {
+  const sel = $('preset-sel');
+  if (!sel?.value) return;
+  const label = sel.options[sel.selectedIndex].text;
+  showConfirm(`Overwrite "${label}" with the current grid?`, () => {
+    const db  = loadStorage();
+    if (!db[sel.value]) db[sel.value] = { name: label, mode: state.appMode };
+    db[sel.value].data      = collectGridData();
+    db[sel.value].savedAt   = fmtDate();
+    // Preserve existing presetType if already set
+    if (!db[sel.value].presetType) db[sel.value].presetType = 'hesitation';
+    saveStorage(db);
+    rebuildDropdowns();
+  });
+}
+
+function updateSaveasDesc() {
+  const t = $('saveas-type')?.value;
+  const el = $('saveas-desc');
+  if (!el) return;
+  if (t === 'frequency') {
+    el.innerHTML = '<strong style="color:var(--text)">[F] Frequency:</strong> Partial % means a <em>GTO mixed strategy</em> — e.g. KK at 50% = solver raises KK only half the time. Quiz weights hands by their frequency.';
+  } else {
+    el.innerHTML = '<strong style="color:var(--text)">[H] Hesitation:</strong> Partial % means you are <em>unsure</em> whether to play this hand. Quiz will ask it less often proportionally.';
+  }
+}
+
+function saveAsNew() {
+  const input = $('saveas-input');
+  if (input) input.value = '';
+  $('saveas-modal').style.display = 'flex';
+  setTimeout(() => $('saveas-input')?.focus(), 50);
+}
+
+function confirmSaveAs() {
+  const name = $('saveas-input')?.value?.trim();
+  if (!name) return;
+  const db         = loadStorage();
+  const id         = Date.now().toString();
+  const presetType = $('saveas-type')?.value ?? 'hesitation';
+  db[id] = { name, mode: state.appMode, data: collectGridData(), savedAt: fmtDate(), presetType };
+  saveStorage(db);
+  closeModals();
+  rebuildDropdowns();
+  const sel = $('preset-sel');
+  if (sel) sel.value = id;
+}
+
+function deleteSelectedPreset() {
+  const sel = $('preset-sel');
+  if (!sel?.value) return;
+  const label = sel.options[sel.selectedIndex].text;
+  showConfirm(`Delete "${label}"? This cannot be undone.`, () => {
+    const db = loadStorage();
+    delete db[sel.value];
+    saveStorage(db);
+    sel.remove(sel.selectedIndex);
+    refreshAll();
+    rebuildDropdowns();
+  });
+}
+
+function fmtDate() {
+  return new Date().toLocaleString('en-GB', {
+    day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPARE
+// ═══════════════════════════════════════════════════════════════════
+function toggleCompare() {
+  setState({ compareMode: !state.compareMode });
+  const btn     = $('comp-btn');
+  const summary = $('compare-summary');
+
+  if (state.compareMode) {
+    btn.classList.add('is-active');
+    btn.textContent   = 'Clear Comparison';
+    const pos  = $('cmp-pos').value;
+    const dA   = getPresetData($('cmp-a').value);
+    const dB   = getPresetData($('cmp-b').value);
+    const setA = new Set(dA?.[pos] ?? []);
+    const setB = new Set(dB?.[pos] ?? []);
+    let extra = 0, miss = 0, shared = 0;
+    ALL_HANDS.forEach(h => {
+      const w = COMBO_WEIGHTS[h];
+      const inA = setA.has(h), inB = setB.has(h);
+      if  (inA && !inB) extra  += w;
+      if (!inA &&  inB) miss   += w;
+      if  (inA &&  inB) shared += w;
+    });
+    $('cmp-extra').textContent = `+${extra}`;
+    $('cmp-miss').textContent  = `-${miss}`;
+    $('cmp-same').textContent  = String(shared);
+    summary.style.display = 'block';
+  } else {
+    btn.classList.remove('is-active');
+    btn.textContent    = 'Run Comparison';
+    summary.style.display = 'none';
+  }
+  refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HOVER
+// ═══════════════════════════════════════════════════════════════════
+function showHover(h) {
+  const set   = getRanges()[h];
+  const fMap  = freq[state.appMode];
+  const list  = getList();
+  const bar   = $('hover-bar');
+  if (!bar) return;
+
+  // Hand name
+  $('hb-bar-hand').textContent = h;
+
+  // Meta: hand type + combo count
+  const isPair   = h.length === 2;
+  const isSuited = h.endsWith('s');
+  const isOff    = h.endsWith('o');
+  const handType = isPair ? 'Pair' : isSuited ? 'Suited' : isOff ? 'Offsuit' : h;
+  const combos   = COMBO_WEIGHTS[h] ?? 0;
+  const metaEl   = $('hb-bar-meta');
+  if (metaEl) {
+    metaEl.innerHTML = `<span class="hb-meta-type">${handType}</span><span class="hb-meta-combos">${combos} combos</span>`;
+  }
+
+  // Positions
+  $('hb-bar-positions').innerHTML = list.map(p => {
+    let action, actionColor, freqLabel = '';
+    if (state.appMode === 'DEF_MASTER') {
+      action      = set.has(`${p}_Raise`) ? '3BET' : set.has(`${p}_Call`) ? 'CALL' : 'FOLD';
+      actionColor = action === 'FOLD' ? 'var(--dim)' : action === 'CALL' ? 'var(--good)' : (state.colors[p] ?? 'var(--accent)');
+      const fKey  = action !== 'FOLD' ? `${p}_${action === '3BET' ? 'Raise' : 'Call'}` : null;
+      const f     = fKey ? (fMap[h]?.[fKey] ?? 100) : null;
+      if (f !== null && f < 100) freqLabel = `${f}%`;
+    } else {
+      action      = set.has(p) ? 'PLAY' : 'FOLD';
+      actionColor = action === 'FOLD' ? 'var(--dim)' : (state.colors[p] ?? 'var(--accent)');
+      const f     = set.has(p) ? (fMap[h]?.[p] ?? 100) : null;
+      if (f !== null && f < 100) freqLabel = `${f}%`;
+    }
+    return `<div class="hb-pos">
+      <span class="hb-pos-name"   style="color:${state.colors[p] ?? 'var(--muted)'}">${p}</span>
+      <span class="hb-pos-action" style="color:${actionColor}">${action}</span>
+      ${freqLabel ? `<span class="hb-pos-freq">${freqLabel}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  bar.classList.add('visible');
+}
+
+function clearHover() {
+  $('hover-bar')?.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════════
+function openExport() {
+  const store = getRanges();
+  const fMap  = freq[state.appMode];
+  let out     = '';
+
+  const lines = (hands, key) => {
+    const combos = hands.reduce((s, h) => s + COMBO_WEIGHTS[h], 0);
+    out += `=== ${key} (${((combos/1326)*100).toFixed(1)}%) ===\n`;
+    if (!hands.length) { out += 'No hands\n\n'; return; }
+    // Emit hand(freq%) — omit (100) for brevity since it is the default
+    const tokens = hands.map(h => {
+      const f = fMap[h]?.[key] ?? 100;
+      return f === 100 ? h : `${h}(${f})`;
+    });
+    for (let i = 0; i < tokens.length; i += 10)
+      out += tokens.slice(i, i + 10).join(', ') + '\n';
+    out += '\n';
+  };
+
+  if (state.appMode === 'DEF_MASTER') {
+    DEF_MASTER_POS.forEach(pos =>
+      ['Raise','Call'].forEach(action =>
+        lines(ALL_HANDS.filter(h => store[h].has(`${pos}_${action}`)), `${pos}_${action}`)
+      )
+    );
+  } else {
+    const list = state.appMode === 'RFI' ? POSITIONS : DEF_OPS;
+    list.forEach(pos => lines(ALL_HANDS.filter(h => store[h].has(pos)), pos));
+  }
+
+  $('export-txt').value           = out;
+  $('export-modal').style.display = 'flex';
+}
+
+async function copyExport(btn) {
+  const text = $('export-txt').value;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback for older browsers / insecure contexts
+    $('export-txt').select();
+    document.execCommand('copy');
+  }
+  btn.textContent = 'Copied!';
+  setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 1500);
+}
+
+function openImport() {
+  const txt = $('import-txt');
+  const row = $('import-pos-row');
+  txt.value = '';
+  row.style.display = 'flex'; // reset
+  $('import-modal').style.display = 'flex';
+  // Live detection: hide position row when a full block is pasted
+  txt.oninput = () => {
+    row.style.display = /===.+?===/.test(txt.value) ? 'none' : 'flex';
+  };
+  setTimeout(() => txt.focus(), 50);
+}
+
+/**
+ * Parse a hand list that may include frequency annotations.
+ * Accepts: "AA, KK(75), QQ(50), AKs(12.5)" or plain "AA, KK, QQ"
+ * Returns: Array of { hand, freq } objects.
+ */
+function parseHandList(str) {
+  return str.split(/[\s,;]+/)
+    .map(token => {
+      token = token.trim();
+      const m = token.match(/^([A-Za-z0-9]{2,3})\(([\d.]+)\)$/);
+      if (m) return { hand: m[1], freq: parseFloat(m[2]) };
+      const plain = token.replace(/[^A-Za-z0-9]/g, '');
+      if (plain.length >= 2 && plain.length <= 3) return { hand: plain, freq: 100 };
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function confirmImport() {
+  const raw = $('import-txt').value.trim();
+  if (!raw) return;
+
+  const store = getRanges();
+  const fMap  = freq[state.appMode];
+
+  // ── Full section export (=== KEY ... === blocks) ──────────────
+  if (/===.+?===/.test(raw)) {
+    const parts = raw.split(/===\s*([\w\s]+?)(?:\s*\([\d.]+%\))?\s*===/);
+
+    // Auto-detect mode from the keys in the block
+    const keys = [];
+    for (let i = 1; i < parts.length; i += 2) keys.push(parts[i].trim());
+    const isRFI    = keys.some(k => POSITIONS.includes(k));
+    const isDef    = keys.some(k => DEF_OPS.includes(k));
+    const isMaster = keys.some(k => k.includes('_'));
+    const detectedMode = isMaster ? 'DEF_MASTER' : isDef ? 'DEF_SPOT' : 'RFI';
+
+    // Switch to correct mode silently before importing
+    if (state.appMode !== detectedMode) setMode(detectedMode);
+
+    // Re-grab store and fMap after potential mode switch
+    const importStore = getRanges();
+    const importFMap  = freq[detectedMode];
+    let imported = 0;
+
+    for (let i = 1; i < parts.length; i += 2) {
+      const key  = parts[i].trim();
+      const body = (parts[i + 1] ?? '').trim();
+      if (!body || body === 'No hands') continue;
+
+      parseHandList(body).forEach(({ hand, freq: f }) => {
+        if (!importStore[hand]) return;
+        importStore[hand].add(key);
+        if (f !== 100) importFMap[hand][key] = f;
+        else delete importFMap[hand][key];
+        imported++;
+      });
+    }
+
+    refreshAll();
+    closeModals();
+    if (imported > 0) {
+      setTimeout(() => {
+        const input = $('saveas-input');
+        if (input) input.value = '';
+        $('saveas-modal').style.display = 'flex';
+        setTimeout(() => $('saveas-input')?.focus(), 50);
+      }, 150);
+    } else {
+      showInfo('No valid hands found in block.');
+    }
+    return;
+  }
+
+  // ── Plain hand list → load into selected position ─────────────
+  const pos    = $('import-pos').value;
+  const parsed = parseHandList(raw).filter(({ hand }) => store[hand]);
+  if (!parsed.length) { showInfo('No valid hands found.'); return; }
+
+  parsed.forEach(({ hand, freq: f }) => {
+    store[hand].add(pos);
+    if (f !== 100) fMap[hand][pos] = f;
+    else delete fMap[hand][pos];
+  });
+
+  closeModals();
+  refreshAll();
+  showInfo(`Imported ${parsed.length} hands into ${pos}.`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL HELPERS  (replaces alert / confirm / prompt)
+// ═══════════════════════════════════════════════════════════════════
+let _confirmCallback = null;
+
+/** Wire confirm-ok once on DOMContentLoaded via init(). Called here at module level. */
+function _initConfirmModal() {
+  $('confirm-ok').addEventListener('click', () => {
+    closeModals();
+    _confirmCallback?.();
+    _confirmCallback = null;
+  });
+}
+
+function showConfirm(msg, onOk) {
+  _confirmCallback = onOk;
+  $('confirm-message').textContent = msg;
+  $('confirm-ok').textContent = 'Confirm';
+  $('confirm-ok').className   = 'btn-danger flex-1 mb-0';
+  $('confirm-cancel').style.display = '';
+  $('confirm-modal').style.display  = 'flex';
+}
+
+function showInfo(msg) {
+  _confirmCallback = null;
+  $('confirm-message').textContent = msg;
+  $('confirm-ok').textContent = 'OK';
+  $('confirm-ok').className   = 'btn-primary flex-1 mb-0';
+  $('confirm-cancel').style.display = 'none';
+  $('confirm-modal').style.display  = 'flex';
+}
+
+function closeModals() {
+  document.querySelectorAll('.modal-bg').forEach(el => el.style.display = 'none');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════
+const quiz = (() => {
+  let active      = false;
+  let current     = null;
+  let stats       = { r: 0, t: 0 };
+  let timeoutId   = null;
+  let data        = null;
+  let mode        = 'RFI';
+  let presetType  = 'hesitation';
+  let pool        = [];   // { h, p, weight } — rebuilt on open
+  let sessionErrs = {};   // key: h+'|'+p → wrong count this session
+
+  // ── Build weighted pool from preset data ──────────────────────
+  function buildPool(presetData, presetMode, pType) {
+    const axis    = presetMode === 'DEF_SPOT' ? DEF_OPS
+                  : presetMode === 'DEF_MASTER' ? DEF_MASTER_POS
+                  : POSITIONS;
+    const freqMap = presetData.__freq ?? {};
+    const entries = [];
+
+    ALL_HANDS.forEach(h => {
+      axis.forEach(p => {
+        const inRange = presetData[p]?.includes(h) ?? false;
+        if (!inRange) {
+          // Fold hands: always weight 1 — need to know these too
+          entries.push({ h, p, inRange: false, weight: 1 });
+          return;
+        }
+        const f = freqMap[h]?.[p] ?? 100;
+        let weight;
+        if (pType === 'hesitation') {
+          // Partial = uncertainty → boost. 100% = confident → normal
+          weight = f < 100 ? 3 : 1;
+        } else {
+          // Frequency mode: proportional to actual GTO frequency
+          weight = f / 100;
+        }
+        entries.push({ h, p, inRange: true, weight });
+      });
+    });
+    return entries;
+  }
+
+  // ── Weighted random pick ──────────────────────────────────────
+  function pickFromPool() {
+    // Apply session error boost on top of base weights
+    const total = pool.reduce((s, e) => {
+      const errBoost = (sessionErrs[e.h + '|' + e.p] ?? 0) * 1.5;
+      return s + e.weight + errBoost;
+    }, 0);
+    let r = Math.random() * total;
+    for (const e of pool) {
+      const errBoost = (sessionErrs[e.h + '|' + e.p] ?? 0) * 1.5;
+      r -= e.weight + errBoost;
+      if (r <= 0) return e;
+    }
+    return pool[pool.length - 1];
+  }
+
+  function handleKey(e) {
+    if (!active) return;
+    if (e.key === '1' || e.key === 'ArrowLeft')  answer(true);
+    if (e.key === '2' || e.key === 'ArrowRight') answer(false);
+  }
+
+  function open() {
+    const key        = $('quiz-preset-sel').value;
+    const store      = loadStorage();
+    const item       = store[key];
+    data             = item?.data ?? null;
+    mode             = item?.mode ?? 'RFI';
+    presetType       = item?.presetType ?? 'hesitation';
+    if (!data) { showInfo('No preset selected or preset has no data.'); return; }
+
+    active      = true;
+    stats       = { r: 0, t: 0 };
+    sessionErrs = {};
+    pool        = buildPool(data, mode, presetType);
+
+    $('quiz-score').textContent       = 'Score: 0 / 0';
+    $('quiz-summary').style.display   = 'none';
+    $('quiz-main').style.display      = 'block';
+    $('quiz-modal').style.display     = 'flex';
+    document.addEventListener('keydown', handleKey);
+
+    const typeLabel = presetType === 'frequency' ? '[F]' : '[H]';
+    $('quiz-title-label').textContent =
+      typeLabel + ' ' + (item.name ?? 'PRESET').toUpperCase();
+    next();
+  }
+
+  function close() {
+    active = false;
+    $('quiz-modal').style.display = 'none';
+    document.removeEventListener('keydown', handleKey);
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+
+  function next() {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    current = pickFromPool();
+    $('quiz-hand').textContent = current.h;
+    $('quiz-pos').textContent  = (mode === 'DEF_SPOT' ? 'ACTION: ' : 'POSITION: ') + current.p;
+    $('quiz-pos').style.color  = state.colors[current.p] ?? 'var(--accent)';
+    $('quiz-feedback').textContent = '1 / ← In Range  ·  2 / → Fold';
+    $('quiz-btn-in').disabled   = false;
+    $('quiz-btn-fold').disabled = false;
+  }
+
+  function answer(ans) {
+    if (!active || !current) return;
+    $('quiz-btn-in').disabled   = true;
+    $('quiz-btn-fold').disabled = true;
+
+    const right = (ans === current.inRange);
+    stats.t++;
+    if (right) stats.r++;
+    else {
+      const k = current.h + '|' + current.p;
+      sessionErrs[k] = (sessionErrs[k] ?? 0) + 1;
+    }
+
+    const pct = stats.t > 0 ? Math.round((stats.r / stats.t) * 100) : 0;
+    $('quiz-score').textContent = `Score: ${stats.r} / ${stats.t} (${pct}%)`;
+
+    const freqMap  = data.__freq ?? {};
+    const f        = current.inRange ? (freqMap[current.h]?.[current.p] ?? 100) : null;
+    const freqHint = (f !== null && f < 100)
+      ? ` <span style="color:var(--muted);font-size:0.65rem">(${f}%${presetType === 'hesitation' ? ' hesitation' : ' GTO mix'})</span>`
+      : '';
+
+    $('quiz-feedback').innerHTML = right
+      ? `<span style="color:var(--good)">✓ CORRECT</span>${freqHint}`
+      : `<span style="color:var(--bad)">✗ ${current.p}: should ${current.inRange ? 'PLAY' : 'FOLD'}</span>${freqHint}`;
+
+    timeoutId = setTimeout(next, 1400);
+  }
+
+  function showSummary() {
+    $('quiz-main').style.display    = 'none';
+    $('quiz-summary').style.display = 'block';
+    const pct = stats.t > 0 ? Math.round((stats.r / stats.t) * 100) : 0;
+
+    // Top 5 most-missed hands this session
+    const sorted = Object.entries(sessionErrs)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const missHtml = sorted.length
+      ? sorted.map(([k, n]) => {
+          const [h, p] = k.split('|');
+          return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.75rem;">
+            <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:700">${h}</span>
+            <span style="color:${state.colors[p] ?? 'var(--muted)'}">${p}</span>
+            <span style="color:var(--bad)">${n}✗</span>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--good);font-size:0.8rem;text-align:center;padding:12px">No mistakes! 🎉</div>';
+
+    $('quiz-summary').innerHTML = `
+      <div class="quiz-title" style="margin-bottom:12px">SESSION SUMMARY</div>
+      <div style="font-size:1.4rem;font-weight:800;color:${pct >= 80 ? 'var(--good)' : pct >= 60 ? 'var(--accent)' : 'var(--bad)'};margin-bottom:4px">${pct}%</div>
+      <div style="font-size:0.65rem;color:var(--muted);margin-bottom:16px">${stats.r} correct / ${stats.t} total</div>
+      ${sorted.length ? '<div style="font-size:0.65rem;font-weight:800;color:var(--muted);letter-spacing:1px;margin-bottom:8px">MOST MISSED</div>' : ''}
+      ${missHtml}
+      <button class="quiz-exit" style="margin-top:16px;width:100%" onclick="quiz.close()">Close</button>
+    `;
+  }
+
+  return { open, close, answer, showSummary };
+})();
+
+// (quiz and radio methods are bound directly in init() — no global wrappers needed)
+
+// ═══════════════════════════════════════════════════════════════════
+// RADIO  (self-contained module — no outer audio references)
+// ═══════════════════════════════════════════════════════════════════
+const radio = (() => {
+  const STATIONS = [
+    { id:'lofi',      emoji:'🎧', label:'Lofi Beats',        urls:['https://ice.somafm.com/beatblender-128-mp3','https://ice6.somafm.com/beatblender-128-mp3'] },
+    { id:'hiphop',    emoji:'🎤', label:'Hip Hop 90s/2000s', urls:['https://ice.somafm.com/fluid-128-mp3','https://ice6.somafm.com/fluid-128-mp3'] },
+    { id:'ambient',   emoji:'🌑', label:'Drone / Dark Ambient',urls:['https://ice.somafm.com/dronezone-128-mp3','https://ice6.somafm.com/dronezone-128-mp3','https://ice.somafm.com/digitalis-128-mp3'] },
+    { id:'retrowave', emoji:'👾', label:'Indie Game / Synth', urls:['https://ice.somafm.com/synphaera-128-mp3','https://ice6.somafm.com/synphaera-128-mp3'] },
+    { id:'jazz',      emoji:'🎷', label:'Jazz',              urls:['https://ice.somafm.com/lush-128-mp3','https://ice6.somafm.com/lush-128-mp3'] },
+    { id:'rock',      emoji:'🎸', label:'Rock',              urls:['https://stream.radioparadise.com/rock-128','https://stream.radioparadise.com/rock-320'] },
+    { id:'metal',     emoji:'🤘', label:'Metal',             urls:['https://ice.somafm.com/metal-128-mp3','https://ice6.somafm.com/metal-128-mp3'] },
+    { id:'classical', emoji:'🎻', label:'Classical / Mellow', urls:['https://stream.radioparadise.com/mellow-128','https://stream.radioparadise.com/mellow-320'] },
+  ];
+
+  let activeId = null;
+  let el       = null;   // <audio> element
+
+  function tryStream(urls, idx) {
+    if (idx >= urls.length) return;
+    el.src    = urls[idx];
+    el.volume = parseFloat($('radio-vol').value);
+    el.load();
+    el.play().catch(() => tryStream(urls, idx + 1));
+  }
+
+  function play(id) {
+    if (activeId === id) {
+      el.pause();
+      el.src  = '';
+      activeId = null;
+      updateUI();
+      return;
+    }
+    activeId = id;
+    const s  = STATIONS.find(x => x.id === id);
+    tryStream(s.urls, 0);
+    updateUI();
+  }
+
+  function setVolume(v) {
+    if (el) el.volume = parseFloat(v);
+  }
+
+  function updateUI() {
+    const playing = activeId !== null;
+    $('radio-eq').style.opacity = playing ? '1' : '0.3';
+    const nowEl = $('radio-now');
+    if (playing) {
+      nowEl.textContent = STATIONS.find(x => x.id === activeId).label;
+      nowEl.style.color = 'var(--accent)';
+    } else {
+      nowEl.textContent = 'Off';
+      nowEl.style.color = 'var(--dim)';
+    }
+    STATIONS.forEach(s => {
+      const btn = $('rs-' + s.id);
+      if (!btn) return;
+      const on = s.id === activeId;
+      btn.style.background    = on ? 'rgba(77,166,255,0.12)' : '';
+      btn.style.borderColor   = on ? 'rgba(77,166,255,0.35)' : '';
+      const label = btn.querySelector('span:last-child');
+      if (label) label.style.color = on ? 'var(--accent)' : 'var(--muted)';
+    });
+  }
+
+  function init() {
+    el = $('radio-audio');
+    if (!el) return;
+    el.addEventListener('error', () => {
+      if (!activeId) return;
+      const s   = STATIONS.find(x => x.id === activeId);
+      const cur = s.urls.indexOf(el.src);
+      if (cur < s.urls.length - 1) tryStream(s.urls, cur + 1);
+    });
+  }
+
+  return { init, play, setVolume };
+})();
+
+// (radio.play bound in init())
+
+// ═══════════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS  (registered exactly once in init())
+// ═══════════════════════════════════════════════════════════════════
+function handleKeyDown(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (document.querySelector('.modal-bg[style*="flex"]')) return;
+
+  switch (e.key.toLowerCase()) {
+    case 'r': setMode('RFI');        break;
+    case 'd': setMode('DEF_SPOT');   break;
+    case 'm': setMode('DEF_MASTER'); break;
+    case 's': setTexture('Solid');   break;
+    case 'h': setTexture('Hatched'); break;
+    case 'escape': closeModals();    break;
+    default: {
+      const idx = parseInt(e.key) - 1;
+      if (!isNaN(idx) && idx >= 0) {
+        const list = getList();
+        if (list[idx]) setActiveBrush(list[idx]);
+      }
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// GTO GHOST
+// ═══════════════════════════════════════════════════════════════════
+function toggleGhost() {
+  const btn = $('btn-ghost');
+  const on  = !state.ghost.active;
+  setState({ ghost: { ...state.ghost, active: on } });
+  btn.classList.toggle('is-active', on);
+  btn.textContent = on ? 'Hide Ghost' : 'Show Ghost';
+  refreshAll();
+}
+
+function _ghostPosOptions(key) {
+  // Returns the correct position keys for the selected ghost preset
+  if (!key) return ['UTG','HJ','CO','BTN','SB'];
+  const store = loadStorage();
+  const mode  = store[key]?.mode ?? 'RFI';
+  if (mode === 'DEF_SPOT')   return ['Raise','Call'];
+  if (mode === 'DEF_MASTER') return ['UTG','HJ','CO','BTN','SB','BB'];
+  return ['UTG','HJ','CO','BTN','SB'];
+}
+
+function _rebuildGhostPos(key) {
+  const sel  = $('ghost-pos');
+  if (!sel) return;
+  const opts = _ghostPosOptions(key);
+  const prev = sel.value;
+  sel.innerHTML = '';
+  opts.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    sel.appendChild(o);
+  });
+  // Keep previous selection if still valid, else default to first
+  sel.value = opts.includes(prev) ? prev : opts[0];
+  setState({ ghost: { ...state.ghost, pos: sel.value } });
+}
+
+function updateGhostPreset() {
+  const key = $('ghost-preset')?.value || null;
+  setState({ ghost: { ...state.ghost, preset: key } });
+  _rebuildGhostPos(key);
+  if (state.ghost.active) refreshAll();
+}
+
+function updateGhostPos() {
+  const pos = $('ghost-pos')?.value ?? 'UTG';
+  setState({ ghost: { ...state.ghost, pos } });
+  if (state.ghost.active) refreshAll();
+}
+
+function updateGhostColor(val) {
+  setState({ ghost: { ...state.ghost, color: val } });
+  $('ghost-opacity').style.accentColor = val;
+  if (state.ghost.active) refreshAll();
+}
+
+function updateGhostOpacity(val) {
+  const v = parseFloat(val);
+  setState({ ghost: { ...state.ghost, opacity: v } });
+  $('ghost-opacity-label').textContent = Math.round(v * 100) + '%';
+  if (state.ghost.active) refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PNG EXPORT
+// ═══════════════════════════════════════════════════════════════════
+function exportPNG() {
+  const grid = $('main-grid');
+  if (!grid) return;
+
+  // Build a descriptive filename: presetname-position.png
+  const sel        = $('preset-sel');
+  const presetName = sel?.options[sel.selectedIndex]?.text?.trim() ?? 'range';
+  const brush      = state.activeBrush ?? '';
+  const modeSuffix = state.appMode !== 'RFI' ? '-' + state.appMode.toLowerCase().replace('def_','') : '';
+  const slug       = (presetName + '-' + brush + modeSuffix)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const filename   = slug + '.png';
+
+  // Capture the grid with its current skin background
+  const bgColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--skin-grid-bg').trim() || '#0e1018';
+
+  html2canvas(grid, {
+    backgroundColor: bgColor,
+    scale: 2,       // retina-quality output
+    useCORS: true,
+    logging: false,
+  }).then(canvas => {
+    const a    = document.createElement('a');
+    a.href     = canvas.toDataURL('image/png');
+    a.download = filename;
+    a.click();
+  }).catch(err => {
+    console.error('PNG export failed:', err);
+    showInfo('PNG export failed. Please try again.');
+  });
+}
+
+// ── Boot ────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
+window.addEventListener('beforeunload', () => { const a = $('radio-audio'); if (a) { a.pause(); a.src = ''; } });
+
+    // ── UI THEME SWITCHER ─────────────────────────────────────
+    (function() {
+      const UI_KEY = 'gto_ui_theme';
+      function applyUITheme(theme) {
+        document.body[theme === 'default' ? 'removeAttribute' : 'setAttribute']('data-ui-theme', theme);
+        document.querySelectorAll('.ui-theme-pill').forEach(b =>
+          b.classList.toggle('active', b.dataset.uiTheme === theme));
+        localStorage.setItem(UI_KEY, theme);
+      }
+      document.querySelectorAll('.ui-theme-pill').forEach(b =>
+        b.addEventListener('click', () => applyUITheme(b.dataset.uiTheme)));
+      applyUITheme(localStorage.getItem(UI_KEY) || 'default');
+    })();
+
+  </script>
+</body>
+</html>
