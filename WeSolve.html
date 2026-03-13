@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v1.2.1 — AllIn export fixed. Finally! - D 3:47AM -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>6-Max Preflop Trainer</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap');
 
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
@@ -211,11 +212,33 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
   font-weight: 700;
   cursor: pointer;
   margin-bottom: 6px;
-  transition: background 0.1s, border-color 0.1s;
+  transition: all 0.18s ease-out; /* feels snappier */ border-color 0.1s;
   background: var(--surface-2);
   overflow: hidden;
 }
 .pos-pill:hover { background: var(--surface-3); }
+.action-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: all 0.18s ease-out; /* feels snappier */ border-color 0.1s, box-shadow 0.1s;
+  background: var(--surface-2);
+}
+.action-pill:hover {
+  background: var(--surface-3);
+  border-color: var(--border-hi);
+}
+.action-pill.active {
+  border-color: var(--accent);
+  background: rgba(77,166,255,0.07);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .pos-pill.active {
   border-color: var(--accent);
   background: rgba(77,166,255,0.1);
@@ -223,22 +246,30 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 }
 
 /* ── Utility ─────────────────────────────────────────────────── */
-.label-sm {
-  font-size: 0.6rem;
-  color: var(--dim);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
+/* label-sm — canonical rule below */
 
 .stats-bar {
   display: flex;
   justify-content: space-between;
-  font-size: 0.7rem;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--muted);
-  margin-top: 8px;
+  align-items: baseline;
+  font-size: 0.62rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--ws-muted, #3d5278);
+  margin-top: 7px;
+}
+.stats-bar span:first-child {
+  font-size: 0.52rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ws-muted, #3d5278);
+}
+.stats-bar span:last-child,
+.stats-bar strong {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: var(--ws-text, #dde6f5) !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: 0.3px !important;
 }
 
 /* ── Grid ────────────────────────────────────────────────────── */
@@ -250,7 +281,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
   position: sticky;
   top: 24px;
   overflow: visible;
-  margin-top: 56px;   /* reserve space above for the hover bar */
+  margin-top: 96px;   /* reserve space above for hover bar + scenario label */
 }
 
 .grid {
@@ -302,6 +333,29 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
   height: 4px;
   accent-color: #f5c518;
   cursor: pointer;
+}
+.freq-slider-row {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.freq-slider-row.visible { display: flex; }
+.freq-slider {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.freq-slider-label {
+  font-size: 0.6rem;
+  color: var(--accent);
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 36px;
+  text-align: right;
 }
 .ghost-row {
   display: flex;
@@ -433,6 +487,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 .hb-meta { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; padding-right: 14px; border-right: 1px solid var(--border); }
 .hb-meta-type   { font-size: 0.58rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
 .hb-meta-combos { font-size: 0.65rem; font-weight: 800; color: var(--text); }
+.hb-meta-equity { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.5px; margin-top: 1px; }
 .hb-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
 
 /* ── Radio bar ───────────────────────────────────────────────── */
@@ -620,9 +675,9 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
         
     /* ============================================================
        PREMIUM UI OVERHAUL v1.0
-       Philosophy: Grid is the hero. Everything else serves it.
-       Rules: 8px spacing grid. 4 type levels. Motion everywhere.
-       Zero functional changes. Pure visual layer.
+       // TODO: philosophy? nah Grid is the hero. Everything else serves it.
+       
+       // no logic touched. Pure visual layer.
     ============================================================ */
 
     /* ── 1. GLOBAL TOKENS & RESETS ── */
@@ -772,13 +827,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
     }
 
     /* Level 3: Labels */
-    .label-sm {
-      font-size: 0.55rem !important;
-      letter-spacing: 1.5px !important;
-      font-weight: 800 !important;
-      color: var(--dim) !important;
-      margin-bottom: 5px !important;
-    }
+    /* label-sm — canonical rule in main stylesheet */
 
     /* Level 4: Controls (buttons, selects) */
     select,
@@ -1101,7 +1150,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       color: var(--text) !important;
     }
 
-    /* ── 14. STATS DIVIDER ── */
+    /* ──  ── */
     .stats-divider {
       border-top: 1px solid var(--border) !important;
       padding-top: 10px !important;
@@ -1129,13 +1178,13 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
 
-    /* ── 17. SELECTION ── */
+    /* ──  ── */
     ::selection {
       background: rgba(77,166,255,0.25);
       color: var(--text);
     }
 
-    /* ── 18. INPUT FIELDS ── */
+    /* ──  ── */
     .export-textarea,
     .import-textarea,
     .saveas-input {
@@ -1289,6 +1338,110 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 
     /* ── UI THEME OVERRIDES (Cyber / Elite / Aurora) ── */
 
+    [data-ui-theme="black"] {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --surface-2: #111111;
+      --surface-3: #161616;
+      --border: #1e1e1e;
+      --text: #f0f0f0;
+      --muted: #606060;
+      --dim: #2a2a2a;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --accent: #6b9fff;
+      --accent-2: #a78bfa;
+      --skin-grid-bg: #050505;
+      --skin-empty: #0a0a0a;
+      --skin-empty-border: 1px solid #1e1e1e;
+      --skin-label-color: rgba(240,240,240,0.85);
+      --shadow-glow: 0 0 0 1px rgba(107,159,255,0.06), 0 8px 40px rgba(0,0,0,0.9);
+      /* ws- tokens */
+      --ws-void:      #000000;
+      --ws-deep:      #050505;
+      --ws-base:      #0a0a0a;
+      --ws-surface:   #111111;
+      --ws-lift:      #161616;
+      --ws-high:      #1c1c1c;
+      --ws-edge:      #1e1e1e;
+      --ws-edge-2:    #282828;
+      --ws-text:      #f0f0f0;
+      --ws-sub:       #888888;
+      --ws-muted:     #444444;
+      --ws-dim:       #2a2a2a;
+      --ws-accent:    #6b9fff;
+      --ws-accent-hi: #93bbff;
+      --ws-accent-lo: rgba(107,159,255,0.1);
+      --ws-green:     #22c55e;
+      --ws-red:       #ef4444;
+      --ws-gold:      #f59e0b;
+    }
+    [data-ui-theme="black"] .top-controls {
+      background: rgba(0,0,0,0.98) !important;
+      border-bottom-color: #1e1e1e !important;
+    }
+    [data-ui-theme="black"] .card {
+      background: rgba(10,10,10,0.95) !important;
+      border-color: #1e1e1e !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 8px 40px rgba(0,0,0,0.95) !important;
+    }
+    [data-ui-theme="black"] .card-title { color: #f0f0f0 !important; -webkit-text-fill-color: unset !important; }
+    [data-ui-theme="black"] .card-title::before { background: #6b9fff; }
+    [data-ui-theme="black"] .btn-primary {
+      background: rgba(107,159,255,0.15) !important;
+      border: 1px solid rgba(107,159,255,0.35) !important;
+      color: #93bbff !important;
+      box-shadow: none !important;
+    }
+    [data-ui-theme="black"] .btn-primary:hover {
+      background: rgba(107,159,255,0.25) !important;
+      border-color: rgba(107,159,255,0.55) !important;
+    }
+    [data-ui-theme="black"] .quiz-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+      color: #000 !important;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.3) !important;
+    }
+    [data-ui-theme="black"] select,
+    [data-ui-theme="black"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold) {
+      background: #111111 !important;
+      border-color: #1e1e1e !important;
+      color: #f0f0f0 !important;
+    }
+    [data-ui-theme="black"] button:not(.btn-primary):not(.quiz-btn):not(.ui-theme-pill):not(.theme-btn):not(.quiz-btn-in):not(.quiz-btn-fold):hover {
+      background: #1a1a1a !important;
+      border-color: #333333 !important;
+      color: #ffffff !important;
+    }
+    [data-ui-theme="black"] .pos-pill.active {
+      background: rgba(107,159,255,0.08) !important;
+      border-color: #6b9fff !important;
+      box-shadow: inset 3px 0 0 #6b9fff !important;
+    }
+    [data-ui-theme="black"] .cell:hover {
+      border-color: #6b9fff !important;
+      box-shadow: 0 0 0 1.5px #6b9fff, 0 0 16px rgba(107,159,255,0.3) !important;
+    }
+    [data-ui-theme="black"] .grid-wrap {
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 8px 40px rgba(0,0,0,0.9) !important;
+    }
+    [data-ui-theme="black"] #hover-bar {
+      background: rgba(10,10,10,0.99) !important;
+      border-color: #1e1e1e !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8) !important;
+    }
+    [data-ui-theme="black"] .modal-bg  { background: rgba(0,0,0,0.94) !important; }
+    [data-ui-theme="black"] .modal-card {
+      background: #0a0a0a !important;
+      border-color: #1e1e1e !important;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.95) !important;
+    }
+    [data-ui-theme="black"] #radio-bar {
+      background: rgba(0,0,0,0.98) !important;
+      border-top-color: #1e1e1e !important;
+    }
+    [data-ui-theme="black"] .quiz-hand-big { color: #f0f0f0 !important; -webkit-text-fill-color: unset !important; }
+
     [data-ui-theme="cyber"] {
       --bg: #03000a;
       --surface: #07041a;
@@ -1307,6 +1460,25 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --skin-empty-border: 1px solid #1a1640;
       --skin-label-color: rgba(200,230,255,0.9);
       --shadow-glow: 0 0 0 1px rgba(0,229,255,0.08), 0 8px 40px rgba(0,229,255,0.05);
+      /* ws- token overrides so all components respond */
+      --ws-void:      #01000a;
+      --ws-deep:      #03000f;
+      --ws-base:      #07041a;
+      --ws-surface:   #0c0824;
+      --ws-lift:      #100d2e;
+      --ws-high:      #16123a;
+      --ws-edge:      #1a1640;
+      --ws-edge-2:    #221e50;
+      --ws-text:      #e0f0ff;
+      --ws-sub:       #6090b0;
+      --ws-muted:     #2a4060;
+      --ws-dim:       #1a2a40;
+      --ws-accent:    #00e5ff;
+      --ws-accent-hi: #40f0ff;
+      --ws-accent-lo: rgba(0,229,255,0.1);
+      --ws-green:     #00ffb3;
+      --ws-red:       #ff2060;
+      --ws-gold:      #ffe040;
     }
     [data-ui-theme="cyber"] body {
       
@@ -1378,6 +1550,25 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --skin-empty-border: 1px solid #2a2018;
       --skin-label-color: rgba(245,234,216,0.85);
       --shadow-glow: 0 0 0 1px rgba(212,170,80,0.07), 0 8px 40px rgba(212,170,80,0.04);
+      /* ws- token overrides */
+      --ws-void:      #020100;
+      --ws-deep:      #060402;
+      --ws-base:      #0c0a08;
+      --ws-surface:   #131009;
+      --ws-lift:      #1a150c;
+      --ws-high:      #221b10;
+      --ws-edge:      #2a2018;
+      --ws-edge-2:    #352a20;
+      --ws-text:      #f5ead8;
+      --ws-sub:       #9a8060;
+      --ws-muted:     #5a4530;
+      --ws-dim:       #3a2e22;
+      --ws-accent:    #d4aa50;
+      --ws-accent-hi: #f0c860;
+      --ws-accent-lo: rgba(212,170,80,0.1);
+      --ws-green:     #d4aa50;
+      --ws-red:       #c02040;
+      --ws-gold:      #d4aa50;
     }
     [data-ui-theme="elite"] body {
       
@@ -1444,6 +1635,25 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
       --skin-empty-border: 1px solid #162640;
       --skin-label-color: rgba(216,240,240,0.9);
       --shadow-glow: 0 0 0 1px rgba(0,200,160,0.08), 0 8px 40px rgba(0,200,160,0.05);
+      /* ws- token overrides */
+      --ws-void:      #010608;
+      --ws-deep:      #030c12;
+      --ws-base:      #060f1c;
+      --ws-surface:   #0a1626;
+      --ws-lift:      #0f1e32;
+      --ws-high:      #14263e;
+      --ws-edge:      #162640;
+      --ws-edge-2:    #1e3250;
+      --ws-text:      #d8f0f0;
+      --ws-sub:       #508a90;
+      --ws-muted:     #2e5a62;
+      --ws-dim:       #1e3a45;
+      --ws-accent:    #00c8a0;
+      --ws-accent-hi: #00e8b8;
+      --ws-accent-lo: rgba(0,200,160,0.1);
+      --ws-green:     #00e8b0;
+      --ws-red:       #ff3060;
+      --ws-gold:      #c0e040;
     }
     [data-ui-theme="aurora"] body {
       
@@ -1585,19 +1795,19 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
+  padding: 0 18px;
   height: 100%;
   border-right: 1px solid var(--border);
   flex-shrink: 0;
 }
 .topbar-group-label {
-  font-size: 0.48rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 2px !important;
+  font-size: 0.44rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 2.5px !important;
   text-transform: uppercase !important;
-  color: var(--dim) !important;
+  color: var(--ws-dim, #273450) !important;
   white-space: nowrap !important;
-  margin: 0 3px 0 0 !important;
+  margin: 0 4px 0 0 !important;
   width: auto !important;
   flex-shrink: 0;
 }
@@ -1672,7 +1882,7 @@ button:hover { background: var(--surface-3); border-color: var(--dim); }
 
 /* ── UI Theme pills in topbar ─────────────────────────────── */
 .topbar-right .ui-theme-pill {
-  height: 26px !important;
+  height: 28px !important;
   display: flex !important;
   align-items: center !important;
 }
@@ -1725,6 +1935,1674 @@ body::before {
     radial-gradient(ellipse at 50% 5%,  rgba(0,160,255,0.07)  0%, transparent 40%);
 }
 
+
+/* ── Scenario context label ────────────────────────────────── */
+.scenario-label {
+  position: absolute;
+  top: -38px;
+  left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  height: 30px;
+  gap: 10px;
+  background: var(--ws-deep, #060a12);
+  border: 1px solid var(--ws-edge, #1e2d48);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+.scenario-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scenario-badge-mode {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.scenario-badge-name {
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.scenario-badge-pos {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+/* ── Study timer in top bar ────────────────────────────────── */
+.topbar-timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topbar-timer-label {
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.topbar-timer-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  color: var(--ws-sub, #7a94c0);
+  letter-spacing: 1.5px;
+  min-width: 38px;
+  transition: color 0.3s;
+}
+/* Timer glows when session is active (>0) */
+.topbar-timer-val.timer-active {
+  color: var(--ws-accent-hi, #60a5fa);
+}
+
+/* ── Quiz position filter ──────────────────────────────────── */
+.quiz-pos-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.quiz-pos-filter label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.quiz-pos-filter select {
+  flex: 1;
+  padding: 5px 28px 5px 8px !important;
+  font-size: 0.65rem !important;
+  height: 28px;
+  margin-bottom: 0 !important;
+}
+
+/* ── Quiz hand history strip ───────────────────────────────── */
+.quiz-history {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  min-height: 22px;
+  margin-bottom: 4px;
+}
+.quiz-hist-item {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+.quiz-hist-item--correct {
+  background: rgba(31,217,138,0.15);
+  border: 1px solid rgba(31,217,138,0.4);
+  color: var(--good);
+}
+.quiz-hist-item--wrong {
+  background: rgba(255,77,122,0.12);
+  border: 1px solid rgba(255,77,122,0.4);
+  color: var(--bad);
+}
+.quiz-hist-item--empty {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  opacity: 0.3;
+}
+
+/* ── Range notes ───────────────────────────────────────────── */
+.range-notes-wrap {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.range-notes-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 5px;
+}
+.range-notes-display {
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  min-height: 0;
+  font-family: Inter, sans-serif;
+}
+.range-notes-edit {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: 0.68rem;
+  font-family: Inter, sans-serif;
+  padding: 7px 9px;
+  resize: vertical;
+  min-height: 56px;
+  line-height: 1.55;
+  display: none;
+  margin-bottom: 4px;
+  transition: border-color 0.15s;
+}
+.range-notes-edit:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(77,166,255,0.1);
+}
+.range-notes-btns {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+/* ── Shortcuts modal ───────────────────────────────────────── */
+.modal-shortcuts { width: 360px; }
+.shortcuts-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.shortcuts-table tr td { padding: 5px 4px; font-size: 0.7rem; border-bottom: 1px solid var(--border); }
+.shortcuts-table tr:last-child td { border-bottom: none; }
+.shortcuts-table .kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.shortcuts-table .sh-desc { color: var(--muted); padding-left: 12px; }
+
+
+/* ══ CHART LIBRARY REDESIGN ════════════════════════════════ */
+
+/* Preset selector — give it more presence */
+#preset-sel {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border-color: var(--accent) !important;
+  background: var(--surface-2) !important;
+  margin-bottom: 8px !important;
+}
+
+/* Primary action row */
+.lib-primary-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.lib-primary-row .btn-load-main {
+  flex: 2;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 0 !important;
+  height: 34px;
+  border-radius: 8px !important;
+}
+.lib-primary-row .btn-save-main {
+  flex: 1;
+  margin-bottom: 0 !important;
+  height: 34px;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+}
+
+/* Save as — subtle pill */
+#btn-saveas {
+  font-size: 0.6rem !important;
+  padding: 4px 10px !important;
+  height: 26px !important;
+  width: auto !important;
+  margin-bottom: 0 !important;
+  color: var(--muted) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+#btn-saveas:hover {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  background: var(--surface-2) !important;
+}
+
+/* Icon action row */
+.lib-icon-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.lib-icon-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px !important;
+  height: 44px !important;
+  font-size: 0.5rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  color: var(--muted) !important;
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 7px !important;
+  margin-bottom: 0 !important;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-out) !important;
+  line-height: 1.2;
+}
+.lib-icon-btn .lib-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.lib-icon-btn:hover {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+  border-color: var(--dim) !important;
+  transform: translateY(-1px) !important;
+}
+.lib-icon-btn--danger .lib-icon { font-size: 0.9rem; }
+.lib-icon-btn--danger {
+  color: var(--bad) !important;
+  background: rgba(255,77,122,0.05) !important;
+  border-color: rgba(255,77,122,0.2) !important;
+}
+.lib-icon-btn--danger:hover {
+  background: rgba(255,77,122,0.12) !important;
+  border-color: rgba(255,77,122,0.5) !important;
+  color: var(--bad) !important;
+}
+.lib-icon-btn--accent {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+  background: var(--ws-accent-lo, rgba(59,130,246,0.08)) !important;
+  border-color: rgba(59,130,246,0.25) !important;
+}
+.lib-icon-btn--accent:hover {
+  background: rgba(59,130,246,0.15) !important;
+  border-color: rgba(59,130,246,0.5) !important;
+  color: var(--ws-accent-hi, #60a5fa) !important;
+}
+/* Export — more muted than Import */
+#btn-export {
+  opacity: 0.65;
+}
+#btn-export:hover {
+  opacity: 1;
+}
+
+/* Save-as row aligned right */
+.lib-saveas-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 6px;
+  margin-top: -4px;
+}
+
+/* Range notes cleaner */
+.range-notes-wrap {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+
+/* ══ QUIZ CARD POLISH ══════════════════════════════════════ */
+.quiz-card-sub {
+  font-size: 0.58rem;
+  color: var(--ws-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+  font-style: italic;
+  border-left: 2px solid var(--ws-green, #10d07a);
+  padding-left: 8px;
+  opacity: 0.8;
+}
+
+/* ══ RIGHT SIDEBAR POLISH ══════════════════════════════════ */
+
+/* Stats bar — normalise */
+.stats-bar strong, .stats-bar span:last-child {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+/* Compare card — tighter inline labels */
+.cmp-inline-label {
+  font-size: 0.5rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--dim) !important;
+  margin-bottom: 3px !important;
+}
+#cmp-a, #cmp-b, #cmp-pos {
+  margin-bottom: 6px !important;
+  font-size: 0.68rem !important;
+}
+
+/* Ghost card — checkbox row */
+.ghost-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.ghost-check-row label {
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  color: var(--muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  cursor: pointer !important;
+  flex: 1;
+  margin-bottom: 0 !important;
+}
+.ghost-check-row input[type=checkbox] {
+  width: 14px; height: 14px;
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+/* Selection card section separators */
+.sel-section {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.sel-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+/* ══ GLOBAL POLISH ═════════════════════════════════════════ */
+/* card-title slightly more visible */
+.card-title {
+  color: var(--muted) !important;
+}
+.card-title::before {
+  opacity: 1 !important;
+}
+
+
+/* ── Quiz button — toned down ──────────────────────────────── */
+.quiz-btn {
+  background: var(--surface-3) !important;
+  color: var(--good) !important;
+  font-weight: 800 !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.8px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(31,217,138,0.35) !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  position: relative;
+  overflow: hidden;
+}
+.quiz-btn::before { display: none !important; }
+.quiz-btn:hover:not(:disabled) {
+  background: rgba(31,217,138,0.1) !important;
+  border-color: var(--good) !important;
+  box-shadow: 0 0 0 1px rgba(31,217,138,0.2) !important;
+  transform: translateY(-1px) !important;
+  color: var(--good) !important;
+}
+/* Override theme-specific quiz-btn overrides too */
+[data-ui-theme] .quiz-btn {
+  background: var(--surface-3) !important;
+  border: 1px solid rgba(31,217,138,0.35) !important;
+  box-shadow: none !important;
+}
+[data-ui-theme="cyber"] .quiz-btn   { color: #00ffb3 !important; border-color: rgba(0,255,179,0.35) !important; }
+[data-ui-theme="elite"] .quiz-btn   { color: #d4aa50 !important; border-color: rgba(212,170,80,0.35) !important; background: var(--surface-3) !important; }
+[data-ui-theme="aurora"] .quiz-btn  { color: #00e8b0 !important; border-color: rgba(0,232,176,0.35) !important; }
+
+
+/* ── Active preset in topbar ──────────────────────────────── */
+.topbar-active-preset {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  max-width: 200px;
+  overflow: hidden;
+}
+.topbar-active-preset-label {
+  font-size: 0.46rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+.topbar-active-preset-name {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Grid axis labels ─────────────────────────────────────── */
+.grid-axis-wrap {
+  position: relative;
+  padding-left: 18px;
+  padding-top: 18px;
+}
+.grid-axis-col {
+  position: absolute;
+  left: 0;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--skin-gap, 4px);
+}
+.grid-axis-row {
+  position: absolute;
+  top: 2px;
+  left: 18px;
+  display: flex;
+  flex-direction: row;
+  gap: var(--skin-gap, 4px);
+}
+.grid-axis-col span,
+.grid-axis-row span {
+  font-size: 0.46rem;
+  font-weight: 700;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.grid-axis-col span:first-child { visibility: hidden; }
+.grid-wrap:hover .grid-axis-col span,
+.grid-wrap:hover .grid-axis-row span { opacity: 1; }
+
+/* ── Stat combos/pct — animate bigger while painting ──────── */
+#stat-combos, #stat-pct {
+  font-size: 0.82rem !important;
+  color: var(--ws-text) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  transition: font-size 0.2s ease, color 0.2s ease !important;
+}
+.stats-divider.stats-active #stat-combos,
+.stats-divider.stats-active #stat-pct {
+  font-size: 1.15rem !important;
+  color: var(--ws-accent-hi) !important;
+  letter-spacing: -0.5px !important;
+}
+.stats-divider.stats-active .stats-bar span:first-child {
+  color: var(--ws-sub) !important;
+}
+
+/* ── Ghost button active state ────────────────────────────── */
+#btn-ghost.is-active {
+  background: rgba(245,197,24,0.1) !important;
+  border-color: #f5c718 !important;
+  color: #f5c718 !important;
+  box-shadow: 0 0 12px rgba(245,199,24,0.15) !important;
+}
+
+/* ── Quiz Elite theme gradient fix ────────────────────────── */
+[data-ui-theme="elite"] .quiz-hand-big {
+  background: linear-gradient(135deg, #f5ead8, #d4aa50) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+[data-ui-theme="default"] .quiz-hand-big,
+[data-ui-theme="aurora"] .quiz-hand-big {
+  background: linear-gradient(135deg, var(--text), var(--accent)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+[data-ui-theme="cyber"] .quiz-hand-big {
+  background: linear-gradient(135deg, #e0f0ff, #00e5ff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ── Hover bar — extra clearance from topbar ──────────────── */
+#hover-bar {
+  top: -52px !important;
+}
+
+/* ── Range notes height jump fix ──────────────────────────── */
+.range-notes-wrap {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   WESOLVE — DESIGN LANGUAGE v6
+   
+   The problem with v4/v5: everything was the same weight.
+   Every button, every card, every label competed equally.
+   No hierarchy = no identity.
+
+   This layer establishes:
+   1. A real typographic hierarchy (DM Sans body / DM Mono data / Syne wordmark)
+   2. Buttons with categorical identity — each type looks categorically different
+   3. Cards with material depth — not rectangles, structured surfaces
+   4. A signature accent system — used sparingly, earns its place
+   5. The topbar becomes a real navigation instrument
+   6. Radio bar gets dock identity
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 0. TOKENS ── */
+:root {
+  --ws-void:      #020409;
+  --ws-deep:      #060a12;
+  --ws-base:      #0a0f1c;
+  --ws-surface:   #0e1525;
+  --ws-lift:      #131c30;
+  --ws-high:      #1a2540;
+  --ws-edge:      #1e2d48;
+  --ws-edge-2:    #263552;
+  --ws-text:      #dde6f5;
+  --ws-sub:       #7a94c0;
+  --ws-muted:     #3d5278;
+  --ws-dim:       #273450;
+  --ws-accent:    #3b82f6;
+  --ws-accent-hi: #60a5fa;
+  --ws-accent-lo: rgba(59,130,246,0.12);
+  --ws-green:     #10d07a;
+  --ws-red:       #f04060;
+  --ws-gold:      #e8a020;
+
+  --bg:        var(--ws-void) !important;
+  --surface:   var(--ws-base) !important;
+  --surface-2: var(--ws-surface) !important;
+  --surface-3: var(--ws-lift) !important;
+  --border:    var(--ws-edge) !important;
+  --text:      var(--ws-text) !important;
+  --muted:     var(--ws-sub) !important;
+  --dim:       var(--ws-muted) !important;
+  --accent:    var(--ws-accent) !important;
+  --accent-2:  #7c5cfc !important;
+  --good:      var(--ws-green) !important;
+  --bad:       var(--ws-red) !important;
+}
+
+/* ── 1. BODY ── */
+body {
+  font-family: 'DM Sans', sans-serif !important;
+  background: var(--ws-void) !important;
+}
+
+/* Grain — the texture that kills the "flat screen" effect */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.032;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+
+/* ── 2. WORDMARK ── */
+.topbar-wordmark-name {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  background: linear-gradient(110deg, #dde6f5 0%, #3b82f6 100%);
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.topbar-wordmark-sub {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.42rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 3.5px !important;
+  color: var(--ws-muted) !important;
+  text-transform: uppercase !important;
+}
+
+
+/* ── 3. LOGO MARK — 3×3 hand-range chip ── */
+.topbar-logo-icon {
+  width: 32px !important;
+  height: 32px !important;
+  background: transparent !important;
+  border-radius: 6px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-rows: repeat(3, 1fr) !important;
+  gap: 3px !important;
+  padding: 5px !important;
+  font-size: 0 !important;
+  letter-spacing: 0 !important;
+  border: 1px solid var(--ws-edge-2) !important;
+  background: var(--ws-deep) !important;
+  box-shadow: 0 0 0 0 transparent, inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  flex-shrink: 0 !important;
+}
+.topbar-logo-icon::before,
+.topbar-logo-icon::after { display: none !important; }
+.ws-chip-cell {
+  border-radius: 1px;
+  transition: opacity 0.25s, box-shadow 0.25s;
+}
+.ws-chip-cell.on  {
+  background: var(--ws-accent);
+  box-shadow: 0 0 3px rgba(59,130,246,0.7);
+}
+.ws-chip-cell.off { background: var(--ws-edge); }
+.topbar-logo-icon:hover .ws-chip-cell.on {
+  background: var(--ws-accent-hi);
+  box-shadow: 0 0 6px rgba(96,165,250,0.9);
+}
+
+
+/* ── 4. TOP BAR ── */
+.top-controls {
+  background: rgba(2,4,9,0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid var(--ws-edge) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.025), 0 4px 24px rgba(0,0,0,0.6) !important;
+  height: 52px !important;
+}
+
+.topbar-group-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.42rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 3px !important;
+  color: var(--ws-muted) !important;
+  text-transform: uppercase !important;
+  opacity: 0.7;
+}
+
+.topbar-timer-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.4rem !important;
+  letter-spacing: 3px !important;
+  color: var(--ws-muted) !important;
+}
+.topbar-timer-val {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.7rem !important;
+  color: var(--ws-sub) !important;
+  letter-spacing: 1px !important;
+}
+
+.topbar-active-preset-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.4rem !important;
+  letter-spacing: 3px !important;
+  color: var(--ws-muted) !important;
+}
+.topbar-active-preset-name {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.64rem !important;
+  color: var(--ws-accent-hi) !important;
+}
+
+
+/* ── 5. THE BUTTON HIERARCHY ──────────────────────────────────
+   This is the actual fix. 5 distinct button types.
+   Each is categorically different, not just a color swap.
+   ──────────────────────────────────────────────────────────── */
+
+/* RESET — global base */
+button {
+  font-family: 'DM Sans', sans-serif !important;
+  cursor: pointer !important;
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+/* ── TYPE 1: GHOST — secondary utility actions ─────────────── */
+/* (most default buttons, save, cancel, run compare etc) */
+button:not(.btn-primary):not(.quiz-btn):not(.quiz-btn-in):not(.quiz-btn-fold)
+       :not(.theme-btn):not(.skin-btn):not(.toggle-btn):not(.ui-theme-pill)
+       :not(.lib-icon-btn):not(.brush-btn):not(.pos-pill) {
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-sub) !important;
+  border-radius: 6px !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px !important;
+  padding: 8px 12px !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s !important;
+  box-shadow: none !important;
+}
+button:not(.btn-primary):not(.quiz-btn):not(.quiz-btn-in):not(.quiz-btn-fold)
+       :not(.theme-btn):not(.skin-btn):not(.toggle-btn):not(.ui-theme-pill)
+       :not(.lib-icon-btn):not(.brush-btn):not(.pos-pill):hover {
+  background: var(--ws-surface) !important;
+  border-color: var(--ws-edge-2) !important;
+  color: var(--ws-text) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+button:not(.btn-primary):not(.quiz-btn):not(.quiz-btn-in):not(.quiz-btn-fold)
+       :not(.theme-btn):not(.skin-btn):not(.toggle-btn):not(.ui-theme-pill)
+       :not(.lib-icon-btn):not(.brush-btn):not(.pos-pill):active {
+  transform: scale(0.98) !important;
+}
+
+/* ── TYPE 2: FILLED PRIMARY — load / save / confirm ────────── */
+.btn-primary {
+  background: var(--ws-accent) !important;
+  border: none !important;
+  color: #fff !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  border-radius: 6px !important;
+  padding: 9px 14px !important;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+/* Shine sweep */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -120%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+.btn-primary:hover:not(:disabled)::after { left: 160%; }
+.btn-primary:hover:not(:disabled) {
+  background: #5395f8 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2), 0 4px 16px rgba(59,130,246,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98) translateY(0) !important;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important;
+}
+/* Danger variant */
+.btn-danger {
+  background: transparent !important;
+  border: 1px solid rgba(240,64,96,0.3) !important;
+  color: var(--ws-red) !important;
+  border-radius: 6px !important;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(240,64,96,0.08) !important;
+  border-color: rgba(240,64,96,0.6) !important;
+  box-shadow: 0 0 16px rgba(240,64,96,0.15) !important;
+}
+
+/* ── TYPE 3: QUIZ CTA — the most important action ──────────── */
+/* Outlined, green — reads as "go" without being garish */
+.quiz-btn {
+  background: transparent !important;
+  border: 1px solid rgba(16,208,122,0.4) !important;
+  color: var(--ws-green) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  padding: 12px 16px !important;
+  border-radius: 6px !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.1s !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+/* Pulse ring on hover */
+.quiz-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 6px;
+  border: 1px solid rgba(16,208,122,0);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  pointer-events: none;
+}
+.quiz-btn:hover:not(:disabled) {
+  background: rgba(16,208,122,0.06) !important;
+  border-color: rgba(16,208,122,0.7) !important;
+  box-shadow: 0 0 0 3px rgba(16,208,122,0.1), 0 4px 20px rgba(16,208,122,0.15) !important;
+  transform: translateY(-1px) !important;
+  color: #1dffa0 !important;
+}
+.quiz-btn:hover:not(:disabled)::before {
+  border-color: rgba(16,208,122,0.3);
+  box-shadow: 0 0 12px rgba(16,208,122,0.2);
+}
+
+/* ── TYPE 4: TOGGLE buttons ────────────────────────────────── */
+.toggle-btn {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px !important;
+  padding: 5px 8px !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-muted) !important;
+  transition: all 0.12s !important;
+  margin-bottom: 0 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.toggle-btn:hover:not(.active) {
+  color: var(--ws-sub) !important;
+  border-color: var(--ws-edge-2) !important;
+  background: var(--ws-surface) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.toggle-btn.active {
+  background: var(--ws-accent-lo) !important;
+  border-color: rgba(59,130,246,0.4) !important;
+  color: var(--ws-accent-hi) !important;
+  box-shadow: none !important;
+}
+
+/* Topbar segmented control */
+.topbar-grid-seg {
+  background: var(--ws-deep) !important;
+  border: 1px solid var(--ws-edge) !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+.topbar-grid-seg .toggle-btn {
+  border: none !important;
+  border-right: 1px solid var(--ws-edge) !important;
+  border-radius: 0 !important;
+  height: 100% !important;
+  padding: 0 12px !important;
+  font-size: 0.6rem !important;
+  background: transparent !important;
+  color: var(--ws-muted) !important;
+  letter-spacing: 0.3px !important;
+}
+.topbar-grid-seg .toggle-btn:last-child {
+  border-right: none !important;
+}
+.topbar-grid-seg .toggle-btn.active {
+  background: var(--ws-surface) !important;
+  color: var(--ws-text) !important;
+  border-color: var(--ws-edge) !important;
+  box-shadow: none !important;
+}
+.topbar-grid-seg .toggle-btn:hover:not(.active) {
+  background: var(--ws-surface) !important;
+  color: var(--ws-sub) !important;
+  transform: none !important;
+}
+
+/* ── TYPE 5: SKIN buttons ──────────────────────────────────── */
+.skin-btn {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.55rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  padding: 3px 10px !important;
+  height: 26px !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-muted) !important;
+  transition: all 0.12s !important;
+  margin-bottom: 0 !important;
+  width: auto !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+.skin-btn.active,
+.skin-btn:hover {
+  background: var(--ws-accent-lo) !important;
+  border-color: rgba(59,130,246,0.5) !important;
+  color: var(--ws-accent-hi) !important;
+  backdrop-filter: none !important;
+}
+
+/* ── BRUSH BUTTONS ─────────────────────────────────────────── */
+.brush-btn {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 500 !important;
+  border-radius: 5px !important;
+  padding: 7px 10px !important;
+  transition: all 0.12s !important;
+  margin-bottom: 0 !important;
+}
+.brush-btn--inactive {
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-muted) !important;
+}
+.brush-btn--inactive:hover {
+  border-color: var(--ws-edge-2) !important;
+  color: var(--ws-sub) !important;
+}
+
+/* ── UI THEME PILLS — matches skin-btn style ───────────────── */
+.ui-theme-pill {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.55rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  padding: 3px 10px !important;
+  height: 26px !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-muted) !important;
+  transition: all 0.12s !important;
+  margin-bottom: 0 !important;
+  width: auto !important;
+  box-shadow: none !important;
+}
+/* Default — same as skin-btn active (blue) */
+.ui-theme-pill.active,
+.ui-theme-pill:hover {
+  background: var(--ws-accent-lo) !important;
+  border-color: rgba(59,130,246,0.5) !important;
+  color: var(--ws-accent-hi) !important;
+}
+/* Cyber — steel blue tint on active/hover only */
+#ui-theme-cyber.active,
+#ui-theme-cyber:hover {
+  background: rgba(91,168,196,0.1) !important;
+  border-color: rgba(91,168,196,0.45) !important;
+  color: #7ec8e3 !important;
+}
+/* Elite — warm gold tint on active/hover only */
+#ui-theme-elite.active,
+#ui-theme-elite:hover {
+  background: rgba(168,137,90,0.1) !important;
+  border-color: rgba(168,137,90,0.45) !important;
+  color: #c4a870 !important;
+}
+/* Black — pure white on active/hover */
+#ui-theme-black.active,
+#ui-theme-black:hover {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+  color: #f0f0f0 !important;
+}
+/* Aurora — soft teal tint on active/hover only */
+#ui-theme-aurora.active,
+#ui-theme-aurora:hover {
+  background: rgba(90,170,138,0.1) !important;
+  border-color: rgba(90,170,138,0.45) !important;
+  color: #70c4a4 !important;
+}
+
+
+/* ── 6. CARDS — real material depth ───────────────────────────
+   Cards are not just rectangles. They have:
+   - A header strip that's a different material
+   - A clear visual anchor
+   ──────────────────────────────────────────────────────────── */
+.card {
+  background: var(--ws-base) !important;
+  border: 1px solid var(--ws-edge) !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.03) !important;
+  overflow: hidden;
+  transition: box-shadow 0.2s !important;
+}
+.card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+
+/* Card title is now a proper header strip */
+.card-title {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.5rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 2.5px !important;
+  text-transform: uppercase !important;
+  color: var(--ws-muted) !important;
+  padding: 10px 14px !important;
+  margin-bottom: 0 !important;
+  background: var(--ws-deep) !important;
+  border-bottom: 1px solid var(--ws-edge) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+/* Accent tick — left-side visual anchor */
+.card-title::before {
+  content: '' !important;
+  display: inline-block !important;
+  width: 3px !important;
+  height: 10px !important;
+  background: var(--ws-accent) !important;
+  border-radius: 2px !important;
+  opacity: 1 !important;
+  flex-shrink: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Card content gets its own padding */
+.card > *:not(.card-title) {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.card > *:last-child { padding-bottom: 14px; }
+.card > .card-title + * { padding-top: 12px; }
+
+/* Utility: selector areas inside cards */
+.sel-section {
+  padding-top: 10px !important;
+  margin-top: 10px !important;
+  border-top: 1px solid var(--ws-edge) !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.sel-section:first-child {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  border-top: none !important;
+}
+
+/* Mode buttons group — inside Core Engine card */
+.mode-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+/* Stats divider */
+.stats-divider {
+  border-top: 1px solid var(--ws-edge) !important;
+  padding-top: 10px !important;
+  margin-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Library card rows */
+.lib-primary-row {
+  display: flex !important;
+  gap: 6px !important;
+  margin-bottom: 6px !important;
+}
+.lib-primary-row .btn-load-main {
+  flex: 2;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  height: 34px !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  margin-bottom: 0 !important;
+}
+.lib-primary-row .btn-save-main {
+  flex: 1;
+  margin-bottom: 0 !important;
+  height: 34px !important;
+  font-size: 0.68rem !important;
+  padding: 0 10px !important;
+}
+
+#btn-saveas {
+  font-size: 0.58rem !important;
+  padding: 3px 8px !important;
+  height: 24px !important;
+  width: auto !important;
+  margin-bottom: 0 !important;
+  color: var(--ws-muted) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  letter-spacing: 0.2px !important;
+}
+#btn-saveas:hover {
+  color: var(--ws-sub) !important;
+  border-color: var(--ws-edge) !important;
+  background: var(--ws-surface) !important;
+}
+
+/* ── 7. ICON ACTION TILES ──────────────────────────────────── */
+.lib-icon-row {
+  display: flex !important;
+  gap: 4px !important;
+  margin-bottom: 0 !important;
+}
+.lib-icon-btn {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  height: 44px !important;
+  border-radius: 6px !important;
+  background: var(--ws-surface) !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-muted) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.46rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+  line-height: 1.1 !important;
+}
+.lib-icon-btn .lib-icon { font-size: 0.85rem !important; line-height: 1 !important; }
+.lib-icon-btn:hover {
+  background: var(--ws-lift) !important;
+  border-color: var(--ws-edge-2) !important;
+  color: var(--ws-sub) !important;
+  transform: translateY(-1px) !important;
+}
+.lib-icon-btn--danger {
+  background: transparent !important;
+  border-color: rgba(240,64,96,0.18) !important;
+  color: rgba(240,64,96,0.5) !important;
+}
+.lib-icon-btn--danger:hover {
+  background: rgba(240,64,96,0.07) !important;
+  border-color: rgba(240,64,96,0.5) !important;
+  color: var(--ws-red) !important;
+  box-shadow: 0 4px 16px rgba(240,64,96,0.1) !important;
+}
+.lib-icon-btn--accent {
+  background: transparent !important;
+  border-color: rgba(59,130,246,0.18) !important;
+  color: rgba(59,130,246,0.6) !important;
+}
+.lib-icon-btn--accent:hover {
+  background: rgba(59,130,246,0.07) !important;
+  border-color: rgba(59,130,246,0.5) !important;
+  color: var(--ws-accent-hi) !important;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.1) !important;
+}
+
+/* ── 8. POSITION PILLS ─────────────────────────────────────── */
+.pos-pill {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.66rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px !important;
+  border-radius: 5px !important;
+  padding: 8px 11px !important;
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-sub) !important;
+  margin-bottom: 3px !important;
+  transition: all 0.12s !important;
+  box-shadow: none !important;
+}
+.pos-pill:hover {
+  background: var(--ws-surface) !important;
+  border-color: var(--ws-edge-2) !important;
+  color: var(--ws-text) !important;
+  transform: translateX(2px) !important;
+}
+.pos-pill.active {
+  background: var(--ws-accent-lo) !important;
+  border-color: rgba(59,130,246,0.45) !important;
+  color: var(--ws-text) !important;
+  box-shadow: inset 3px 0 0 var(--ws-accent) !important;
+  transform: none !important;
+}
+
+/* ── 9. SELECT ─────────────────────────────────────────────── */
+select {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 400 !important;
+  background: var(--ws-surface) !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-text) !important;
+  border-radius: 6px !important;
+  padding: 7px 28px 7px 10px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233d5278' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+  box-shadow: none !important;
+}
+select:focus {
+  border-color: var(--ws-accent) !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+  outline: none !important;
+}
+
+/* ── 10. GRID PANEL ────────────────────────────────────────── */
+.grid-wrap {
+  background: var(--ws-base) !important;
+  border: 1px solid var(--ws-edge) !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.05), 0 8px 40px rgba(0,0,0,0.6) !important;
+}
+.grid-wrap::before, .grid-wrap::after { display: none !important; }
+
+/* Cell hover */
+.cell:hover {
+  border-color: var(--ws-accent) !important;
+  box-shadow: 0 0 0 1px var(--ws-accent), 0 0 12px rgba(59,130,246,0.25) !important;
+  z-index: 10 !important;
+  transform: scale(1.06) !important;
+}
+
+/* ── 11. HOVER BAR ─────────────────────────────────────────── */
+#hover-bar {
+  background: rgba(2,4,9,0.97) !important;
+  border: 1px solid var(--ws-edge-2) !important;
+  border-radius: 7px !important;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.08), 0 8px 32px rgba(0,0,0,0.8) !important;
+  padding: 8px 16px !important;
+}
+.hb-hand-name {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  color: var(--ws-accent-hi) !important;
+  letter-spacing: -0.3px !important;
+}
+
+/* ── 12. LABELS & STATS ────────────────────────────────────── */
+.label-sm {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.58rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  text-transform: none !important;
+  color: var(--ws-sub, #7a94c0) !important;
+  margin-bottom: 6px !important;
+  opacity: 0.75;
+}
+
+.stats-bar {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: baseline !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.52rem !important;
+  color: var(--ws-muted) !important;
+  padding: 6px 0 !important;
+  margin-top: 0 !important;
+  border-top: 1px solid var(--ws-edge) !important;
+}
+.stats-bar span:first-child {
+  font-size: 0.48rem !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--ws-muted) !important;
+}
+.stats-bar strong, .stats-bar span:last-child {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.82rem !important;
+  color: var(--ws-text) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* ── 13. QUIZ MODAL ────────────────────────────────────────── */
+.modal-bg {
+  background: rgba(2,4,9,0.88) !important;
+  backdrop-filter: blur(8px) !important;
+}
+.modal-card {
+  background: var(--ws-base) !important;
+  border: 1px solid var(--ws-edge-2) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.06), 0 24px 80px rgba(0,0,0,0.9) !important;
+  animation: wsModalIn 0.2s cubic-bezier(0.16,1,0.3,1) forwards !important;
+}
+@keyframes wsModalIn {
+  from { opacity:0; transform: scale(0.97) translateY(8px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.quiz-hand-big {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 3.8rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -2px !important;
+  background: linear-gradient(130deg, var(--ws-text) 30%, var(--ws-accent-hi) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  line-height: 1 !important;
+  margin-bottom: 6px !important;
+}
+.quiz-pos-line {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.65rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 4px !important;
+  color: var(--ws-sub) !important;
+  margin-bottom: 24px !important;
+}
+.quiz-title {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.52rem !important;
+  letter-spacing: 2.5px !important;
+  color: var(--ws-muted) !important;
+}
+
+.quiz-btn-in {
+  border-radius: 6px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  background: var(--ws-green) !important;
+  color: #020a06 !important;
+  border: none !important;
+  padding: 16px !important;
+  box-shadow: 0 4px 20px rgba(16,208,122,0.25) !important;
+  transition: box-shadow 0.15s, transform 0.1s !important;
+}
+.quiz-btn-in:hover {
+  box-shadow: 0 6px 28px rgba(16,208,122,0.4) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+}
+.quiz-btn-in:active { transform: scale(0.98) !important; }
+
+.quiz-btn-fold {
+  border-radius: 6px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  background: transparent !important;
+  color: var(--ws-red) !important;
+  border: 1px solid rgba(240,64,96,0.35) !important;
+  padding: 16px !important;
+  box-shadow: none !important;
+  transition: all 0.15s !important;
+}
+.quiz-btn-fold:hover {
+  background: rgba(240,64,96,0.07) !important;
+  border-color: rgba(240,64,96,0.6) !important;
+  box-shadow: 0 6px 28px rgba(240,64,96,0.15) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+}
+.quiz-btn-fold:active { transform: scale(0.98) !important; }
+
+/* ── 14. RADIO BAR ─────────────────────────────────────────── */
+#radio-bar {
+  height: 46px !important;
+  background: rgba(2,4,9,0.97) !important;
+  backdrop-filter: blur(16px) !important;
+  border-top: 1px solid var(--ws-edge) !important;
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.02), 0 -4px 24px rgba(0,0,0,0.6) !important;
+}
+.rstation {
+  padding: 0 16px !important;
+  height: 46px !important;
+  border-right: 1px solid var(--ws-edge) !important;
+  gap: 7px !important;
+  transition: background 0.12s !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+.rstation:hover { background: rgba(255,255,255,0.02) !important; }
+.rstation.playing { background: rgba(59,130,246,0.04) !important; }
+
+/* Playing = blue left-edge indicator */
+.rstation.playing::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 2px;
+  background: var(--ws-accent);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 6px rgba(59,130,246,0.6);
+}
+.rstation::after { display: none !important; }
+
+.rstation-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.54rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--ws-muted) !important;
+  transition: color 0.12s !important;
+}
+.rstation:hover .rstation-label { color: var(--ws-sub) !important; }
+.rstation.playing .rstation-label {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+  text-shadow: 0 0 8px rgba(96,165,250,0.4);
+}
+.rstation.playing .rstation-icon {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+  filter: drop-shadow(0 0 3px rgba(96,165,250,0.5));
+}
+
+.radio-now {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.56rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 2px !important;
+  color: var(--ws-muted) !important;
+}
+.radio-eq-bar div { background: var(--ws-accent) !important; }
+.radio-vol-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.48rem !important;
+  letter-spacing: 2px !important;
+  color: var(--ws-muted) !important;
+}
+.radio-vol-input { accent-color: var(--ws-accent) !important; }
+
+/* ── 15. SCENARIO BADGE ────────────────────────────────────── */
+.scenario-badge-mode {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.48rem !important;
+  letter-spacing: 1.5px !important;
+  background: var(--ws-accent-lo) !important;
+  border-color: rgba(59,130,246,0.35) !important;
+  color: var(--ws-accent-hi) !important;
+}
+.scenario-badge-name {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.58rem !important;
+  color: var(--ws-sub) !important;
+}
+
+/* ── 16. MISC POLISH ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ws-edge-2); border-radius: 3px; }
+
+.kbd {
+  font-family: 'DM Mono', monospace !important;
+  background: var(--ws-surface) !important;
+  border: 1px solid var(--ws-edge-2) !important;
+  border-bottom-width: 2px !important;
+  border-radius: 4px !important;
+}
+
+.export-textarea, .import-textarea, .saveas-input, .range-notes-edit {
+  font-family: 'DM Mono', monospace !important;
+  background: var(--ws-deep) !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-text) !important;
+  border-radius: 6px !important;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4) !important;
+}
+.export-textarea:focus, .import-textarea:focus,
+.saveas-input:focus, .range-notes-edit:focus {
+  border-color: var(--ws-accent) !important;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4), 0 0 0 3px rgba(59,130,246,0.1) !important;
+  outline: none !important;
+}
+
+.range-notes-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.46rem !important;
+  letter-spacing: 2px !important;
+  color: var(--ws-muted) !important;
+}
+.range-notes-display {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.65rem !important;
+  line-height: 1.6 !important;
+  color: var(--ws-sub) !important;
+}
+
+.ghost-check-row {
+  background: var(--ws-surface) !important;
+  border-color: var(--ws-edge) !important;
+  border-radius: 5px !important;
+}
+.ghost-check-row label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.56rem !important;
+  letter-spacing: 0.8px !important;
+  color: var(--ws-sub) !important;
+  text-transform: none !important;
+  font-weight: 400 !important;
+}
+
+.cmp-cell { font-family: 'DM Mono', monospace !important; }
+.cmp-cell-label { font-family: 'DM Mono', monospace !important; }
+.quiz-hist-item { font-family: 'DM Mono', monospace !important; }
+
+/* quiz-card-sub — canonical rule below */
+
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--ws-accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Compare button ─────────────────────────────────────── */
+#comp-btn {
+  background: transparent !important;
+  border: 1px solid var(--ws-edge) !important;
+  color: var(--ws-sub) !important;
+  margin-bottom: 0 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  transition: all 0.15s !important;
+}
+#comp-btn .comp-btn-icon {
+  font-size: 0.9rem;
+  opacity: 0.5;
+  margin-right: 2px;
+}
+#comp-btn:hover {
+  background: var(--ws-surface) !important;
+  border-color: var(--ws-edge-2) !important;
+  color: var(--ws-text) !important;
+  transform: none !important;
+}
+#comp-btn.is-active {
+  background: rgba(167,139,250,0.08) !important;
+  border-color: rgba(167,139,250,0.3) !important;
+  color: #c4b5fd !important;
+}
+#comp-btn.is-active:hover {
+  background: rgba(167,139,250,0.12) !important;
+  border-color: rgba(167,139,250,0.45) !important;
+}
+
+/* ── Ghost button active ────────────────────────────────── */
+#btn-ghost.is-active {
+  background: rgba(232,160,32,0.08) !important;
+  border-color: rgba(232,160,32,0.5) !important;
+  color: var(--ws-gold) !important;
+  box-shadow: 0 0 12px rgba(232,160,32,0.1) !important;
+}
+
+/* Per-theme topbar tints — keep them working */
+[data-ui-theme="cyber"]  .top-controls { background: rgba(3,0,10,0.97) !important; }
+[data-ui-theme="elite"]  .top-controls { background: rgba(5,3,4,0.97)  !important; }
+[data-ui-theme="aurora"] .top-controls { background: rgba(2,8,16,0.97) !important; }
+
 </style>
 </head>
 <body>
@@ -1734,7 +3612,7 @@ body::before {
 
   <!-- Brand -->
   <div class="topbar-brand">
-    <div class="topbar-logo-icon">WS</div>
+    <div class="topbar-logo-icon" id="ws-chip"></div>
     <div class="topbar-wordmark">
       <span class="topbar-wordmark-name">WeSolve</span>
       <span class="topbar-wordmark-sub">Preflop Trainer</span>
@@ -1742,6 +3620,14 @@ body::before {
   </div>
 
   <!-- Control groups -->
+  <div class="topbar-active-preset" id="topbar-active-preset" style="display:none">
+    <span class="topbar-active-preset-label">Loaded</span>
+    <span class="topbar-active-preset-name" id="topbar-preset-name">—</span>
+  </div>
+  <div class="topbar-timer">
+    <span class="topbar-timer-label">Session</span>
+    <span class="topbar-timer-val" id="topbar-timer">00:00</span>
+  </div>
   <div class="topbar-controls">
 
     <div class="topbar-group">
@@ -1775,6 +3661,7 @@ body::before {
   <div class="topbar-right">
     <span class="topbar-group-label">Style</span>
     <button class="ui-theme-pill active" data-ui-theme="default" id="ui-theme-default">Default</button>
+    <button class="ui-theme-pill"        data-ui-theme="black"   id="ui-theme-black">Black</button>
     <button class="ui-theme-pill"        data-ui-theme="cyber"   id="ui-theme-cyber">Cyber</button>
     <button class="ui-theme-pill"        data-ui-theme="elite"   id="ui-theme-elite">Elite</button>
     <button class="ui-theme-pill"        data-ui-theme="aurora"  id="ui-theme-aurora">Aurora</button>
@@ -1788,127 +3675,251 @@ body::before {
   <!-- LEFT SIDEBAR ─────────────────────────────────────────── -->
   <div class="sidebar">
 
-    <div class="card">
-      <div class="card-title">Core Engine</div>
-      <div class="mode-group">
-        <button id="mode-rfi"        class="btn-primary mb-0">1. Opening Ranges</button>
-        <button id="mode-def-spot"   class="mb-0">2. Defense Matchups</button>
-        <button id="mode-def-master" class="mb-0">3. Defense Overview</button>
+    <!-- Core Engine — vertical nav rail -->
+    <div class="panel panel--primary">
+      <div class="panel-header">
+        <span class="panel-header-label">Mode</span>
+      </div>
+      <div class="panel-body panel-body--flush">
+        <nav class="mode-rail">
+          <button id="mode-rfi" class="mode-rail-item mode-btn-rfi mode-rail-item--active" title="Opening Ranges — RFI ranges for each position in 6-max preflop">
+            <span class="mode-rail-indicator"></span>
+            <span class="mode-rail-content">
+              <span class="mode-rail-name">Opening Ranges</span>
+            </span>
+          </button>
+          <button id="mode-def-spot" class="mode-rail-item mode-btn-def" title="Defense Matchups — how each position defends vs a specific raiser">
+            <span class="mode-rail-indicator"></span>
+            <span class="mode-rail-content">
+              <span class="mode-rail-name">Defense Matchups</span>
+            </span>
+          </button>
+          <button id="mode-def-master" class="mode-rail-item mode-btn-master" title="vs 3-Bet — your response when facing a 3-bet: call or 4-bet by position">
+            <span class="mode-rail-indicator"></span>
+            <span class="mode-rail-content">
+              <span class="mode-rail-name">vs 3-Bet</span>
+            </span>
+          </button>
+        </nav>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Chart Library</div>
-      <select id="preset-sel" class="mb-12"></select>
-      <div class="flex-row gap-6 mb-6">
-        <button id="btn-load"   class="btn-primary flex-1 mb-0">Load</button>
-        <button id="btn-save"   class="flex-1 mb-0">Save</button>
-        <button id="btn-saveas" class="flex-1 mb-0">Save as…</button>
+    <!-- Chart Library -->
+    <div class="panel panel--secondary">
+      <div class="panel-header">
+        <span class="panel-header-label">Chart Library</span>
       </div>
-      <div class="flex-row gap-6 mb-6">
-        <button id="btn-export" class="flex-1 mb-0">Export</button>
-        <button id="btn-clear"  class="btn-danger flex-1 mb-0">Clear</button>
-        <button id="btn-delete" class="btn-danger flex-1 mb-0">Delete</button>
+      <div class="panel-body">
+
+        <select id="preset-sel" class="mb-8"></select>
+
+        <!-- Load primary, Save + Save As inline row -->
+        <button id="btn-load" class="btn-load-slim w-full mb-6">Load Range</button>
+        <div class="lib-save-row mb-10">
+          <button id="btn-save"   class="lib-save-btn lib-save-btn--primary">Save</button>
+          <button id="btn-saveas-inline" class="lib-save-btn lib-save-btn--ghost">Save as…</button>
+        </div>
+
+        <!-- Icon tiles -->
+        <div class="lib-icon-row">
+          <button id="btn-import" class="lib-icon-btn lib-icon-btn--accent">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Import
+          </button>
+          <button id="btn-export" class="lib-icon-btn">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 9V1M4 4l3-3 3 3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Export
+          </button>
+          <button id="btn-clear" class="lib-icon-btn lib-icon-btn--danger">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Clear
+          </button>
+          <button id="btn-delete" class="lib-icon-btn lib-icon-btn--danger">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M5 4V2h4v2M5.5 7v4M8.5 7v4M3 4l.8 7.2A1 1 0 004.8 12h4.4a1 1 0 001-.8L11 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Delete
+          </button>
+        </div>
+
+        <!-- Range Notes -->
+        <div class="range-notes-wrap" id="range-notes-wrap" style="display:none">
+          <div class="range-notes-label">Notes</div>
+          <div class="range-notes-display" id="range-notes-display"></div>
+          <textarea class="range-notes-edit" id="range-notes-edit" placeholder="Add notes about this range…"></textarea>
+          <div class="range-notes-btns" id="range-notes-btns" style="display:none">
+            <button id="btn-notes-save" class="btn-primary flex-1 mb-0" style="font-size:0.65rem;padding:5px">Save</button>
+            <button id="btn-notes-cancel" class="flex-1 mb-0" style="font-size:0.65rem;padding:5px">Cancel</button>
+          </div>
+        </div>
+
       </div>
-      <button id="btn-import" class="mb-0">⬆ Import Range</button>
     </div>
 
-    <div class="card">
-      <div class="card-title">Quiz Mode</div>
-      <div class="label-sm">Target Preset:</div>
-      <select id="quiz-preset-sel" class="mb-12"></select>
-      <button id="btn-quiz" class="quiz-btn">Start Quiz</button>
+    <!-- Smart Quiz -->
+    <div class="panel panel--secondary">
+      <div class="panel-header">
+        <span class="panel-header-label">Smart Quiz</span>
+      </div>
+      <div class="panel-body">
+        <p class="quiz-card-sub">Tests borderline &amp; position-sensitive hands from the loaded preset.</p>
+        <div class="label-sm mb-6">Preset</div>
+        <select id="quiz-preset-sel" class="mb-12"></select>
+        <button id="btn-quiz" class="quiz-btn">Start Quiz</button>
+      </div>
     </div>
 
   </div>
 
   <!-- CENTER GRID ───────────────────────────────────────────── -->
   <div class="grid-wrap">
+    <div class="scenario-label">
+      <div class="scenario-badge">
+        <span class="scenario-badge-mode" id="scenario-mode">RFI</span>
+        <span class="scenario-badge-name" id="scenario-name">No preset loaded</span>
+      </div>
+      <div class="scenario-badge">
+        <span class="scenario-badge-pos" id="scenario-pos"></span>
+      </div>
+    </div>
     <div id="hover-bar">
       <div class="hb-hand-name" id="hb-bar-hand">AKs</div>
       <div id="hb-bar-meta" class="hb-meta"></div>
       <div class="hb-divider"></div>
       <div id="hb-bar-positions" class="hb-positions"></div>
     </div>
-    <div class="grid" id="main-grid"></div>
+    <!-- Grid axis labels -->
+    <div class="grid-axis-wrap">
+      <div class="grid-axis-col">
+        <span></span>
+        <span>A</span><span>K</span><span>Q</span><span>J</span><span>T</span>
+        <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span>
+        <span>4</span><span>3</span><span>2</span>
+      </div>
+      <div class="grid-axis-row">
+        <span>A</span><span>K</span><span>Q</span><span>J</span><span>T</span>
+        <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span>
+        <span>4</span><span>3</span><span>2</span>
+      </div>
+      <div class="grid" id="main-grid"></div>
+    </div>
   </div>
 
   <!-- RIGHT SIDEBAR ────────────────────────────────────────── -->
   <div class="sidebar">
 
-    <div class="card">
-      <div class="card-title">Selection</div>
-
-      <div class="label-sm" id="texture-label">Brush</div>
-      <div class="brush-group">
-        <button id="btn-mod-Solid"   class="brush-btn btn-primary">Solid</button>
-        <button id="btn-mod-Hatched" class="brush-btn brush-btn--inactive">Hatched</button>
+    <!-- Selection -->
+    <div class="panel panel--primary">
+      <div class="panel-header">
+        <span class="panel-header-label">Selection</span>
       </div>
+      <div class="panel-body">
 
-      <div class="label-sm">Position</div>
-      <div id="pos-palette" class="pos-palette"></div>
+        <!-- Paint mode — real segmented control -->
+        <div class="sel-section" style="padding-top:0;margin-top:0;border-top:none;">
+          <div class="label-sm" id="texture-label">Paint Mode</div>
+          <div class="seg-control">
+            <button id="btn-mod-Solid"   class="seg-btn seg-btn--active" title="100% commitment — full position">
+              <span class="seg-btn-name">Pure</span>
+              <span class="seg-btn-sub">100%</span>
+            </button>
+            <button id="btn-mod-Hatched" class="seg-btn" title="Mixed frequency — partial decision">
+              <span class="seg-btn-name">Freq</span>
+              <span class="seg-btn-sub">mixed</span>
+            </button>
+          </div>
+          <!-- Freq slider — only visible in Freq mode -->
+          <div class="freq-slider-row" id="freq-slider-row">
+            <input type="range" id="freq-brush-slider" class="freq-slider"
+              min="12.5" max="100" step="12.5" value="100">
+            <span class="freq-slider-label" id="freq-brush-label">100%</span>
+          </div>
+        </div>
 
-      <div class="label-sm mt-16">View</div>
-      <div class="flex-row gap-4 mb-12">
-        <button id="btn-view-master"   class="toggle-btn active">All</button>
-        <button id="btn-view-isolated" class="toggle-btn">Focus</button>
-      </div>
+        <div class="sel-section">
+          <div class="label-sm">Position</div>
+          <div id="pos-palette" class="pos-palette"></div>
+        </div>
 
-      <div class="stats-divider">
-        <div class="stats-bar"><span>Position:</span><strong id="brush-name">UTG</strong></div>
-        <div class="stats-bar"><span>Combos:</span><span id="stat-combos">0 / 1326</span></div>
-        <div class="stats-bar"><span>Range %:</span><span id="stat-pct">0.0%</span></div>
+        <div class="sel-section">
+          <div class="label-sm">View</div>
+          <div class="seg-control">
+            <button id="btn-view-master"   class="seg-btn seg-btn--active" title="All positions overlaid">
+              <span class="seg-btn-name">All</span>
+            </button>
+            <button id="btn-view-isolated" class="seg-btn" title="Selected position only">
+              <span class="seg-btn-name">Solo</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-divider" id="stats-divider">
+          <div class="stats-bar"><span>Position</span><strong id="brush-name">UTG</strong></div>
+          <div class="stats-bar"><span>Combos</span><span id="stat-combos">0 / 1326</span></div>
+          <div class="stats-bar"><span>Range %</span><span id="stat-pct">0.0%</span></div>
+        </div>
+
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Compare</div>
-      <div class="label-sm">Range A</div>
-      <select id="cmp-a" class="mb-8"></select>
-      <div class="label-sm">Range B</div>
-      <select id="cmp-b" class="mb-8"></select>
-      <div class="label-sm">Position</div>
-      <select id="cmp-pos" class="mb-10">
-        <option>UTG</option><option>HJ</option><option>CO</option><option>BTN</option><option>SB</option>
-      </select>
-      <button id="comp-btn">Run Comparison</button>
-      <div id="compare-summary" class="cmp-summary">
-        <div class="cmp-summary-row">
-          <div class="cmp-cell cmp-cell--extra">
-            <div id="cmp-extra" style="color:var(--good)">+0</div>
-            <div class="cmp-cell-label">A only</div>
+    <!-- Compare -->
+    <div class="panel panel--secondary">
+      <div class="panel-header">
+        <span class="panel-header-label">Compare</span>
+      </div>
+      <div class="panel-body">
+        <div class="cmp-inline-label">Range A</div>
+        <select id="cmp-a" class="mb-6"></select>
+        <div class="cmp-inline-label">Range B</div>
+        <select id="cmp-b" class="mb-6"></select>
+        <div class="cmp-inline-label">Position</div>
+        <select id="cmp-pos" class="mb-10">
+          <option>UTG</option><option>HJ</option><option>CO</option><option>BTN</option><option>SB</option>
+        </select>
+        <button id="comp-btn">
+          <span class="comp-btn-icon">⇄</span> Run Comparison
+        </button>
+        <div id="compare-summary" class="cmp-summary">
+          <div class="cmp-summary-row">
+            <div class="cmp-cell cmp-cell--extra">
+              <div id="cmp-extra" style="color:var(--good)">+0</div>
+              <div class="cmp-cell-label">A only</div>
+            </div>
+            <div class="cmp-cell cmp-cell--miss">
+              <div id="cmp-miss" style="color:var(--bad)">-0</div>
+              <div class="cmp-cell-label">B only</div>
+            </div>
+            <div class="cmp-cell cmp-cell--shared">
+              <div id="cmp-same" style="color:var(--text)">0</div>
+              <div class="cmp-cell-label">shared</div>
+            </div>
           </div>
-          <div class="cmp-cell cmp-cell--miss">
-            <div id="cmp-miss" style="color:var(--bad)">-0</div>
-            <div class="cmp-cell-label">B only</div>
-          </div>
-          <div class="cmp-cell cmp-cell--shared">
-            <div id="cmp-same" style="color:var(--text)">0</div>
-            <div class="cmp-cell-label">shared</div>
-          </div>
+          <div id="cmp-pct-row" style="display:none;font-size:0.58rem;color:var(--muted);text-align:center;padding:6px 0;border-top:1px solid var(--border);font-family:'DM Mono',monospace;letter-spacing:0.5px"></div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">GTO Ghost</div>
-      <div class="label-sm">Reference Preset</div>
-      <select id="ghost-preset" class="mb-8"></select>
-      <div class="label-sm">Position</div>
-      <select id="ghost-pos" class="mb-8"></select>
-      <div class="flex-row gap-6 mb-8" style="align-items:center;">
-        <input type="checkbox" id="ghost-follow" style="cursor:pointer;accent-color:#f5c518;">
-        <label for="ghost-follow" style="font-size:0.65rem;font-weight:700;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Follow active brush</label>
+    <!-- GTO Ghost -->
+    <div class="panel panel--secondary">
+      <div class="panel-header">
+        <span class="panel-header-label">GTO Ghost</span>
       </div>
-      <div class="label-sm">Ghost Color</div>
-      <div class="ghost-row mb-8">
-        <input type="color" id="ghost-color" value="#f5c518" style="width:36px;height:24px;border:none;background:none;cursor:pointer;padding:0;">
-        <input type="range" id="ghost-opacity" class="ghost-slider flex-1" min="0.05" max="0.6" step="0.05" value="0.25">
-        <span class="ghost-opacity-label" id="ghost-opacity-label">25%</span>
+      <div class="panel-body">
+        <div class="cmp-inline-label">Reference Preset</div>
+        <select id="ghost-preset" class="mb-6"></select>
+        <div class="cmp-inline-label">Position</div>
+        <select id="ghost-pos" class="mb-8"></select>
+        <div class="ghost-check-row">
+          <input type="checkbox" id="ghost-follow" style="cursor:pointer;accent-color:#f5c518;">
+          <label for="ghost-follow">Follow active brush</label>
+        </div>
+        <div class="cmp-inline-label">Opacity &amp; Color</div>
+        <div class="ghost-row mb-8">
+          <input type="color" id="ghost-color" value="#f5c518" style="width:32px;height:24px;border:none;background:none;cursor:pointer;padding:0;border-radius:4px;">
+          <input type="range" id="ghost-opacity" class="ghost-slider flex-1" min="0.05" max="0.6" step="0.05" value="0.25">
+          <span class="ghost-opacity-label" id="ghost-opacity-label">25%</span>
+        </div>
+        <button id="btn-ghost" title="Overlay a reference range transparently on the grid">Show Ghost</button>
       </div>
-      <button id="btn-ghost">Show Ghost</button>
     </div>
-
 
   </div>
 </div>
@@ -1918,23 +3929,64 @@ body::before {
 <div class="modal-bg" id="quiz-modal">
   <div class="modal-card modal-quiz">
     <div id="quiz-main">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div id="quiz-title-label" class="quiz-title" style="margin-bottom:0">🧠 SMART QUIZ</div>
-        <div id="quiz-streak" style="font-size:0.85rem;font-weight:800;font-family:'JetBrains Mono',monospace;min-width:40px;text-align:right"></div>
+
+      <!-- Header row -->
+      <div class="quiz-header">
+        <div class="quiz-header-left">
+          <div id="quiz-title-label" class="quiz-title">SMART QUIZ</div>
+          <div id="quiz-streak" class="quiz-streak-display"></div>
+        </div>
+        <div class="quiz-header-right">
+          <div id="quiz-score" class="quiz-score"></div>
+        </div>
       </div>
-      <div id="quiz-hand" class="quiz-hand-big">AKs</div>
-      <div id="quiz-pos"  class="quiz-pos-line">POSITION: BTN</div>
-      <div id="quiz-why" style="font-size:0.58rem;color:var(--dim);letter-spacing:0.8px;min-height:16px;margin-bottom:10px;text-align:center"></div>
+
+      <!-- Hand display — the hero moment -->
+      <div class="quiz-hand-stage">
+        <div class="quiz-hand-bg-grid" aria-hidden="true"></div>
+        <div id="quiz-hand" class="quiz-hand-big">AKs</div>
+        <div id="quiz-pos" class="quiz-pos-line">BTN</div>
+        <div id="quiz-why" class="quiz-why-line"></div>
+      </div>
+
+      <!-- Answer buttons -->
       <div class="quiz-answer-group">
-        <button id="quiz-btn-in"   class="quiz-btn-in">IN RANGE (1)</button>
-        <button id="quiz-btn-fold" class="quiz-btn-fold">FOLD (2)</button>
+        <button id="quiz-btn-in"   class="quiz-btn-in">
+          <span class="quiz-btn-label">In Range</span>
+          <span class="quiz-btn-key">1</span>
+        </button>
+        <button id="quiz-btn-fold" class="quiz-btn-fold">
+          <span class="quiz-btn-label">Fold</span>
+          <span class="quiz-btn-key">2</span>
+        </button>
       </div>
-      <div id="quiz-feedback" class="quiz-feedback">1 / ← In Range &nbsp;·&nbsp; 2 / → Fold</div>
-      <div id="quiz-score" class="quiz-score">Score: 0 / 0</div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button id="quiz-exit" class="quiz-exit" style="flex:1">Exit</button>
-        <button id="quiz-summary-btn" class="btn-primary" style="flex:1;padding:8px;font-size:0.7rem;font-weight:700;letter-spacing:1px;">Summary</button>
+
+      <!-- History strip -->
+      <div class="quiz-history" id="quiz-history">
+        <div class="quiz-hist-item quiz-hist-item--empty">·</div>
+        <div class="quiz-hist-item quiz-hist-item--empty">·</div>
+        <div class="quiz-hist-item quiz-hist-item--empty">·</div>
+        <div class="quiz-hist-item quiz-hist-item--empty">·</div>
+        <div class="quiz-hist-item quiz-hist-item--empty">·</div>
       </div>
+
+      <!-- Feedback -->
+      <div id="quiz-feedback" class="quiz-feedback">← 1 · In Range &nbsp;&nbsp; Fold · 2 →</div>
+
+      <!-- Position filter -->
+      <div class="quiz-pos-filter" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <label>Drill position</label>
+        <select id="quiz-pos-filter">
+          <option value="ALL">All Positions</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="quiz-actions">
+        <button id="quiz-exit" class="quiz-exit">Close</button>
+        <button id="quiz-summary-btn" class="btn-primary" style="flex:1;padding:8px;font-size:0.7rem;font-weight:600;letter-spacing:0.5px;">Summary</button>
+      </div>
+
     </div>
     <div id="quiz-summary" style="display:none;min-width:280px;"></div>
   </div>
@@ -1956,9 +4008,8 @@ body::before {
   <div class="modal-card modal-import">
     <div class="card-title">Import</div>
     <p class="import-hint">
-      Paste a full export (with <code style="color:var(--accent);">=== UTG ===</code> headers) to restore all positions and frequencies,
-      or paste a plain list like <code style="color:var(--accent);">AA, KK(75), AKs(25)</code> and pick a position below.
-      Hands without <code style="color:var(--accent);">(freq)</code> default to 100%.
+      Paste a full export (with <code style="color:var(--accent);">=== UTG ===</code> headers) to restore all positions, or paste a hand list below and pick a position.<br>
+      Supports: <code style="color:var(--accent);">AA, KK(75), AKs</code> · notation: <code style="color:var(--accent);">JJ+, ATs+, T5o+, 66-99, ATs-AJs</code>
     </p>
     <textarea id="import-txt" class="import-textarea" placeholder="Paste range here..."></textarea>
     <div class="import-pos-row" id="import-pos-row">
@@ -1969,7 +4020,7 @@ body::before {
     </div>
     <div class="import-actions">
       <button id="btn-confirm-import" class="btn-primary flex-2 mb-0">Import</button>
-      <button id="btn-cancel-import"  class="flex-1 mb-0">Cancel</button>
+      <button id="btn-cancel-import"  class="flex-1 mb-0">Close</button>
     </div>
   </div>
 </div>
@@ -2008,25 +4059,58 @@ body::before {
 <!-- Radio bar -->
 <div id="radio-bar">
   <div class="radio-status">
+    <div class="radio-brand-mark">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <rect x="0" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+        <rect x="3" y="2" width="2" height="8" rx="1" fill="currentColor" opacity="0.5"/>
+        <rect x="6" y="0" width="2" height="12" rx="1" fill="currentColor"/>
+        <rect x="9" y="2" width="2" height="8" rx="1" fill="currentColor" opacity="0.5"/>
+        <rect x="12" y="4" width="2" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+      </svg>
+    </div>
     <div id="radio-eq" class="radio-eq-bar">
       <div style="animation:eq1 0.8s ease-in-out infinite;"></div>
       <div style="animation:eq2 0.5s ease-in-out infinite;"></div>
       <div style="animation:eq3 0.9s ease-in-out infinite;"></div>
     </div>
-    <span id="radio-now" class="radio-now">Off</span>
+    <span id="radio-now" class="radio-now">No station</span>
   </div>
-  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-    <div class="rstation" id="rs-lofi"><span>🎧</span><span class="rstation-label">Lofi</span></div>
-    <div class="rstation" id="rs-hiphop"><span>🎤</span><span class="rstation-label">Hip Hop</span></div>
-    <div class="rstation" id="rs-ambient"><span>🌑</span><span class="rstation-label">Drone</span></div>
-    <div class="rstation" id="rs-retrowave"><span>👾</span><span class="rstation-label">Indie Game</span></div>
-    <div class="rstation" id="rs-jazz"><span>🎷</span><span class="rstation-label">Jazz</span></div>
-    <div class="rstation" id="rs-rock"><span>🎸</span><span class="rstation-label">Rock</span></div>
-    <div class="rstation" id="rs-metal"><span>🤘</span><span class="rstation-label">Metal</span></div>
-    <div class="rstation" id="rs-classical"><span>🎻</span><span class="rstation-label">Classical</span></div>
+  <div class="radio-stations">
+    <div class="rstation" id="rs-lofi">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>
+      <span class="rstation-label">Lofi</span>
+    </div>
+    <div class="rstation" id="rs-hiphop">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 9V4l8-2v7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="9" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="9.5" cy="9" r="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span class="rstation-label">Hip-Hop</span>
+    </div>
+    <div class="rstation" id="rs-ambient">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6c1-2 2-3 3-3s2 4 3 4 2-3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="rstation-label">Drone</span>
+    </div>
+    <div class="rstation" id="rs-retrowave">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="7" y="2" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="2" y="7" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="7" y="7" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6"/></svg>
+      <span class="rstation-label">Indie</span>
+    </div>
+    <div class="rstation" id="rs-jazz">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5 2c0 3 3 3 3 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M3 4c0 2 2 2 2 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/><path d="M7 4c0 2 2 2 2 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/><circle cx="6" cy="9.5" r="1" fill="currentColor"/></svg>
+      <span class="rstation-label">Jazz</span>
+    </div>
+    <div class="rstation" id="rs-rock">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8l2-5 2 3 2-4 2 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="rstation-label">Rock</span>
+    </div>
+    <div class="rstation" id="rs-metal">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3l2 6M6 3v6M10 3l-2 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2 6h3M7 6h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg>
+      <span class="rstation-label">Metal</span>
+    </div>
+    <div class="rstation" id="rs-classical">
+      <svg class="rstation-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 9V4a3 3 0 016 0v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M1 9h3M8 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span class="rstation-label">Classical</span>
+    </div>
   </div>
   <div class="radio-vol-group">
-    <span class="radio-vol-label">VOL</span>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="color:var(--ws-muted,#3d5278);flex-shrink:0"><path d="M1 4h2l3-2v8L3 8H1V4z" fill="currentColor" opacity="0.6"/><path d="M8 3.5c1 .7 1.5 1.5 1.5 2.5S9 8.8 8 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M9.5 1.5C11 2.7 12 4.3 12 6s-1 3.3-2.5 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/></svg>
     <input id="radio-vol" type="range" min="0" max="1" step="0.05" value="0.6" class="radio-vol-input">
   </div>
 </div>
@@ -2056,10 +4140,38 @@ body::before {
 const RANKS           = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
 const POSITIONS       = ['UTG','HJ','CO','BTN','SB'];
 const DEF_OPS         = ['Raise','Call'];
-const DEF_MASTER_POS  = ['UTG','HJ','CO','BTN','SB','BB'];
+const DEF_MASTER_POS  = ['UTG','HJ','CO','BTN','SB']; // vs-3bet: opener positions
 const STORAGE_KEY     = 'v9_all_presets';
 const ALL_HANDS       = [];  // populated in init()
 const COMBO_WEIGHTS   = {};  // precomputed in init() after ALL_HANDS is filled
+
+// ── Preflop equity vs random hand (%) for all 169 hand types ─────
+// Source: standard poker math / solver consensus values
+const HAND_EQUITY = {
+  'AA':85.3,'KK':82.4,'QQ':79.9,'JJ':77.2,'TT':74.7,'99':71.7,'88':68.7,'77':65.7,'66':62.7,'55':59.6,'44':56.3,'33':53.0,'22':49.6,
+  'AKs':67.0,'AQs':65.4,'AJs':63.9,'ATs':62.5,'A9s':60.6,'A8s':59.5,'A7s':58.3,'A6s':57.2,'A5s':57.8,'A4s':56.7,'A3s':55.6,'A2s':54.5,
+  'AKo':65.4,'AQo':63.7,'AJo':62.1,'ATo':60.6,'A9o':58.5,'A8o':57.2,'A7o':55.9,'A6o':54.7,'A5o':55.1,'A4o':53.9,'A3o':52.7,'A2o':51.5,
+  'KQs':62.4,'KJs':60.9,'KTs':59.5,'K9s':57.5,'K8s':55.9,'K7s':54.7,'K6s':53.5,'K5s':52.3,'K4s':51.1,'K3s':50.0,'K2s':48.9,
+  'KQo':60.5,'KJo':58.9,'KTo':57.4,'K9o':55.3,'K8o':53.5,'K7o':52.2,'K6o':50.9,'K5o':49.7,'K4o':48.4,'K3o':47.2,'K2o':46.0,
+  'QJs':59.1,'QTs':57.7,'Q9s':55.6,'Q8s':53.8,'Q7s':52.0,'Q6s':50.9,'Q5s':49.8,'Q4s':48.6,'Q3s':47.5,'Q2s':46.3,
+  'QJo':57.0,'QTo':55.5,'Q9o':53.3,'Q8o':51.4,'Q7o':49.5,'Q6o':48.3,'Q5o':47.1,'Q4o':45.8,'Q3o':44.6,'Q2o':43.4,
+  'JTs':56.6,'J9s':54.4,'J8s':52.5,'J7s':50.6,'J6s':48.9,'J5s':47.9,'J4s':46.7,'J3s':45.6,'J2s':44.4,
+  'JTo':54.4,'J9o':52.1,'J8o':50.1,'J7o':48.1,'J6o':46.3,'J5o':45.2,'J4o':43.9,'J3o':42.7,'J2o':41.5,
+  'T9s':54.5,'T8s':52.5,'T7s':50.5,'T6s':48.6,'T5s':46.9,'T4s':45.8,'T3s':44.6,'T2s':43.5,
+  'T9o':52.2,'T8o':50.1,'T7o':48.1,'T6o':46.1,'T5o':44.3,'T4o':43.1,'T3o':41.9,'T2o':40.7,
+  '98s':52.0,'97s':50.0,'96s':48.0,'95s':46.2,'94s':44.5,'93s':43.3,'92s':42.2,
+  '98o':49.7,'97o':47.6,'96o':45.5,'95o':43.7,'94o':41.9,'93o':40.7,'92o':39.5,
+  '87s':49.9,'86s':47.9,'85s':46.0,'84s':44.2,'83s':42.6,'82s':41.5,
+  '87o':47.5,'86o':45.4,'85o':43.4,'84o':41.6,'83o':39.9,'82o':38.7,
+  '76s':47.9,'75s':46.1,'74s':44.2,'73s':42.5,'72s':41.5,
+  '76o':45.4,'75o':43.5,'74o':41.5,'73o':39.7,'72o':38.5,
+  '65s':46.2,'64s':44.4,'63s':42.7,'62s':41.6,
+  '65o':43.7,'64o':41.8,'63o':40.0,'62o':38.8,
+  '54s':44.6,'53s':43.0,'52s':41.9,
+  '54o':42.1,'53o':40.4,'52o':39.2,
+  '43s':43.1,'42s':42.0,'43o':40.5,'42o':39.3,
+  '32s':41.6,'32o':38.9
+};
 
 // ── Skin definitions ────────────────────────────────────────────────
 const SKINS = {
@@ -2121,11 +4233,11 @@ const SKINS = {
 
 // ── Colour themes ────────────────────────────────────────────────────
 const THEMES = {
-  gto:    { UTG:'#ff4d4d', HJ:'#ff7700', CO:'#ffe600', BTN:'#1fd98a', SB:'#4da6ff', BB:'#b266ff', Raise:'#ff4d7a', Call:'#1fd98a' },
-  safe:   { UTG:'#e6194b', HJ:'#f58231', CO:'#ffe119', BTN:'#bfef45', SB:'#4363d8', BB:'#911eb4', Raise:'#e6194b', Call:'#4363d8' },
-  heat:   { UTG:'#b30000', HJ:'#e60000', CO:'#ff3333', BTN:'#ff6666', SB:'#ff9999', BB:'#7a0177', Raise:'#b30000', Call:'#ff9999' },
-  wizard: { UTG:'#e94041', HJ:'#e94041', CO:'#e94041', BTN:'#427eb8', SB:'#427eb8', BB:'#427eb8', Raise:'#e94041', Call:'#427eb8' },
-  chart:  { UTG:'#e63946', HJ:'#f4a261', CO:'#e9c46a', BTN:'#2dc653', SB:'#4895ef', BB:'#9b5de5', Raise:'#e63946', Call:'#2dc653' }
+  gto:    { UTG:'#ff4d4d', HJ:'#ff7700', CO:'#ffe600', BTN:'#1fd98a', SB:'#4da6ff', BB:'#b266ff', Raise:'#ff4d7a', Call:'#1fd98a', AllIn:'#8b0000' },
+  safe:   { UTG:'#e6194b', HJ:'#f58231', CO:'#ffe119', BTN:'#bfef45', SB:'#4363d8', BB:'#911eb4', Raise:'#e6194b', Call:'#4363d8', AllIn:'#6b0000' },
+  heat:   { UTG:'#b30000', HJ:'#e60000', CO:'#ff3333', BTN:'#ff6666', SB:'#ff9999', BB:'#7a0177', Raise:'#b30000', Call:'#ff9999', AllIn:'#4d0000' },
+  wizard: { UTG:'#e94041', HJ:'#e94041', CO:'#e94041', BTN:'#427eb8', SB:'#427eb8', BB:'#427eb8', Raise:'#e94041', Call:'#427eb8', AllIn:'#7a0000' },
+  chart:  { UTG:'#e63946', HJ:'#f4a261', CO:'#e9c46a', BTN:'#2dc653', SB:'#4895ef', BB:'#9b5de5', Raise:'#e63946', Call:'#2dc653', AllIn:'#8b1a1a' }
 };
 
 // ── Built-in preset data ─────────────────────────────────────────────
@@ -2160,6 +4272,8 @@ const state = {
   colors:       THEMES.gto,
   appMode:      'RFI',        // 'RFI' | 'DEF_SPOT' | 'DEF_MASTER'
   activeBrush:  'UTG',
+  defMasterBrush: 'Raise',  // 'Raise' | 'Call'
+  freqBrush:    100,   // frequency used when Freq mode paints a fresh cell
   viewMode:     'master',     // 'master' | 'isolated'
   renderStyle:  'stripes',
   brushTexture: 'Solid',      // 'Solid' | 'Hatched'
@@ -2207,11 +4321,11 @@ function getList()    {
 }
 function getBrushKey() {
   if (state.appMode === 'DEF_MASTER') {
-    return `${state.activeBrush}_${state.brushTexture === 'Solid' ? 'Raise' : 'Call'}`;
+    return `${state.activeBrush}_${state.defMasterBrush}`;
   }
-  return state.brushTexture === 'Hatched'
-    ? `${state.activeBrush}_Hatched`
-    : state.activeBrush;
+  // Both Pure and Freq use the plain position key.
+  // Freq stores partial frequency in fMap — no _Hatched suffix needed.
+  return state.activeBrush;
 }
 function comboWeight(h) {
   if (h.length === 2) return 6;
@@ -2345,6 +4459,7 @@ function init() {
         // paintMode stays null on mousedown — set only when drag enters another cell
         setState({ isMouseDown: true, paintMode: null });
         toggleHand(h);  // single click: cycles freq
+        $('stats-divider')?.classList.add('stats-active');
       });
       cell.addEventListener('mouseenter', () => {
         showHover(h);
@@ -2366,6 +4481,7 @@ function init() {
 
   document.addEventListener('mouseup', () => {
     setState({ isMouseDown: false, paintMode: null });
+    $('stats-divider')?.classList.remove('stats-active');
   });
 
   // Wire keyboard shortcuts — registered exactly once here
@@ -2396,7 +4512,7 @@ function init() {
   // Chart library
   $('btn-load').addEventListener('click',   loadPreset);
   $('btn-save').addEventListener('click',   quickSave);
-  $('btn-saveas').addEventListener('click', saveAsNew);
+  $('btn-saveas-inline').addEventListener('click', saveAsNew);
   $('btn-export').addEventListener('click', openExport);
   $('btn-clear').addEventListener('click',  clearGrid);
   $('btn-delete').addEventListener('click', deleteSelectedPreset);
@@ -2408,6 +4524,13 @@ function init() {
   // Brush texture
   $('btn-mod-Solid').addEventListener('click',   () => setTexture('Solid'));
   $('btn-mod-Hatched').addEventListener('click', () => setTexture('Hatched'));
+
+  // Freq brush slider
+  $('freq-brush-slider').addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    setState({ freqBrush: v });
+    $('freq-brush-label').textContent = v === 100 ? '100%' : v + '%';
+  });
 
   // View mode
   $('btn-view-master').addEventListener('click',   () => setViewMode('master'));
@@ -2484,20 +4607,50 @@ function setMode(m) {
   Object.entries(modeMap).forEach(([mode, id]) => {
     const btn = $(id);
     if (!btn) return;
-    btn.className = mode === m ? 'btn-primary' : '';
+    const colorClass = { 'mode-rfi': 'mode-btn-rfi', 'mode-def-spot': 'mode-btn-def', 'mode-def-master': 'mode-btn-master' }[id] || '';
+    btn.className = `mode-rail-item ${colorClass}${mode === m ? ' mode-rail-item--active' : ''}`;
     btn.style.marginBottom = '0';
   });
 
   if (m !== 'RFI') setState({ viewMode: 'master' });
+  // In DEF_MASTER the freq slider is always visible
+  const _sliderRow = $('freq-slider-row');
+  if (_sliderRow) _sliderRow.classList.toggle('visible', m === 'DEF_MASTER');
+  if (m === 'DEF_MASTER') setState({ defMasterBrush: 'Raise' });
   if (!getList().includes(state.activeBrush)) setState({ activeBrush: getList()[0] });
 
-  // Update brush label & button text
+  // Update brush label & button inner HTML (preserve span structure)
   const tLabel = $('texture-label');
   const btnS   = $('btn-mod-Solid');
   const btnH   = $('btn-mod-Hatched');
-  if (tLabel) tLabel.textContent = m === 'DEF_MASTER' ? 'Action' : 'Brush';
-  if (btnS)   btnS.textContent   = m === 'DEF_MASTER' ? '3-Bet (Solid)'   : 'Solid';
-  if (btnH)   btnH.textContent   = m === 'DEF_MASTER' ? 'Call (Hatched)'  : 'Hatched';
+  if (tLabel) tLabel.textContent = m === 'DEF_MASTER' ? 'Response' : 'Paint Mode';
+  if (btnS) {
+    const nameSpan = btnS.querySelector('.seg-btn-name');
+    const subSpan  = btnS.querySelector('.seg-btn-sub');
+    if (nameSpan) nameSpan.textContent = m === 'DEF_MASTER' ? '4-Bet' : 'Pure';
+    if (subSpan)  subSpan.textContent  = m === 'DEF_MASTER' ? 'bluff/val' : '100%';
+  }
+  if (btnH) {
+    const nameSpan = btnH.querySelector('.seg-btn-name');
+    const subSpan  = btnH.querySelector('.seg-btn-sub');
+    if (nameSpan) nameSpan.textContent = m === 'DEF_MASTER' ? 'Call' : 'Freq';
+    if (subSpan)  subSpan.textContent  = m === 'DEF_MASTER' ? 'vs 3b' : 'mixed';
+  }
+  // Inject All-In btn only in DEF_MASTER, remove it when leaving
+  const _segCtrl = btnS?.closest('.seg-control');
+  const _existingAI = $('btn-mod-AllIn');
+  if (m === 'DEF_MASTER' && _segCtrl && !_existingAI) {
+    const _ai = document.createElement('button');
+    _ai.id = 'btn-mod-AllIn';
+    _ai.className = 'seg-btn';
+    _ai.title = 'All-In — shove range';
+    _ai.innerHTML = '<span class="seg-btn-name">All-In</span><span class="seg-btn-sub">shove</span>';
+    _ai.addEventListener('click', () => setTexture('AllIn'));
+    _segCtrl.appendChild(_ai);
+  } else if (m !== 'DEF_MASTER' && _existingAI) {
+    _existingAI.remove();
+    if (state.brushTexture === 'AllIn') setState({ brushTexture: 'Solid' });
+  }
 
   buildPalette();
   setTexture(state.brushTexture);
@@ -2532,8 +4685,8 @@ function setStyle(s) {
 
 function setViewMode(m) {
   setState({ viewMode: m });
-  $('btn-view-master').className   = 'toggle-btn' + (m === 'master'   ? ' active' : '');
-  $('btn-view-isolated').className = 'toggle-btn' + (m === 'isolated' ? ' active' : '');
+  $('btn-view-master').className   = 'seg-btn' + (m === 'master'   ? ' seg-btn--active' : '');
+  $('btn-view-isolated').className = 'seg-btn' + (m === 'isolated' ? ' seg-btn--active' : '');
   refreshAll();
 }
 
@@ -2542,32 +4695,22 @@ function setTexture(t) {
 
   const btnS = $('btn-mod-Solid');
   const btnH = $('btn-mod-Hatched');
+  const row  = $('freq-slider-row');
 
   if (btnS) {
-    btnS.className = t === 'Solid' ? 'btn-primary' : '';
-    // Reset inline styles so CSS classes take over cleanly
+    btnS.className = t === 'Solid' ? 'seg-btn seg-btn--active' : 'seg-btn';
     btnS.removeAttribute('style');
-    btnS.style.flex         = '1';
-    btnS.style.marginBottom = '0';
-    btnS.style.fontSize     = '0.7rem';
-    btnS.style.padding      = '7px';
-    if (t !== 'Solid') {
-      btnS.style.background = 'var(--surface-2)';
-      btnS.style.border     = '1px solid var(--border)';
-    }
   }
   if (btnH) {
-    btnH.className = t === 'Hatched' ? 'btn-primary' : '';
+    btnH.className = t === 'Hatched' ? 'seg-btn seg-btn--active' : 'seg-btn';
     btnH.removeAttribute('style');
-    btnH.style.flex         = '1';
-    btnH.style.marginBottom = '0';
-    btnH.style.fontSize     = '0.7rem';
-    btnH.style.padding      = '7px';
-    if (t !== 'Hatched') {
-      btnH.style.background = 'var(--surface-2)';
-      btnH.style.border     = '1px solid var(--border)';
-    }
   }
+  const _btnAI = $('btn-mod-AllIn');
+  if (_btnAI) _btnAI.className = t === 'AllIn' ? 'seg-btn seg-btn--active' : 'seg-btn';
+  if (state.appMode === 'DEF_MASTER') {
+    setState({ defMasterBrush: t === 'Solid' ? 'Raise' : t === 'Hatched' ? 'Call' : 'AllIn' });
+  }
+  if (row) row.classList.toggle('visible', t === 'Hatched' || t === 'AllIn' || state.appMode === 'DEF_MASTER');
 }
 
 function setActiveBrush(p) {
@@ -2598,7 +4741,7 @@ function buildPalette() {
   if (!pal) return;
   const list  = getList();
   const store = getRanges();
-  pal.style.gridTemplateColumns = state.appMode === 'DEF_MASTER' ? '1fr 1fr 1fr' : '1fr 1fr';
+  pal.style.gridTemplateColumns = '1fr 1fr';
   pal.innerHTML = '';
 
   list.forEach(p => {
@@ -2606,9 +4749,10 @@ function buildPalette() {
     const fMapP = freq[state.appMode];
     if (state.appMode === 'DEF_MASTER') {
       ALL_HANDS.forEach(h => {
-        const kR = `${p}_Raise`, kC = `${p}_Call`;
+        const kR = `${p}_Raise`, kC = `${p}_Call`, kI = `${p}_AllIn`;
         if (store[h].has(kR)) combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[kR] ?? 100) / 100);
         if (store[h].has(kC)) combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[kC] ?? 100) / 100);
+        if (store[h].has(kI)) combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[kI] ?? 100) / 100);
       });
     } else {
       ALL_HANDS.forEach(h => {
@@ -2616,61 +4760,67 @@ function buildPalette() {
         if (store[h].has(`${p}_Hatched`))  combos += COMBO_WEIGHTS[h] * ((fMapP[h]?.[`${p}_Hatched`]  ?? 100) / 100);
       });
     }
-    const pct  = ((combos / 1326) * 100).toFixed(1);
+    const pct = Math.round(combos / 13.26); // quick math
     const color = state.colors[p] ?? '#fff';
     const isActive = state.activeBrush === p;
 
     const d = document.createElement('div');
-    d.className = 'pos-pill' + (isActive ? ' active' : '');
+    const pillClass = 'pos-pill'; // action-pill merged
+    d.className = pillClass + (isActive ? ' active' : '');
     d.id = 'pill-' + p;
     if (state.appMode === 'RFI' && p === 'SB') d.style.gridColumn = 'span 2';
-    d.innerHTML = `
-      <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
-      <div style="font-weight:800;font-size:0.75rem;flex:1;">${p}</div>
-      <div style="font-size:0.65rem;color:${combos > 0 ? color : 'var(--dim)'};font-weight:700;font-family:'JetBrains Mono';">${pct}%</div>
-    `;
+    d.innerHTML = state.appMode === 'DEF_SPOT'
+      ? `<span style="font-size:0.72rem;font-weight:800;letter-spacing:1px;color:${isActive ? color : 'var(--ws-sub)'}">${p}</span>
+         <span style="font-size:0.6rem;font-weight:600;color:${combos > 0 ? color : 'var(--dim)'};font-family:'JetBrains Mono'">${pct}%</span>`
+      : `<div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>
+         <div style="font-weight:800;font-size:0.75rem;flex:1;">${p}</div>
+         <div style="font-size:0.65rem;color:${combos > 0 ? color : 'var(--dim)'};font-weight:700;font-family:'JetBrains Mono';">${pct}%</div>`;
     d.addEventListener('click', () => setActiveBrush(p));
     pal.appendChild(d);
   });
+
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // GRID RENDERING
 // ═══════════════════════════════════════════════════════════════════
+// DEBUG: toggleHand works, freq cycle solid
 function toggleHand(h) {
-  const set  = getRanges()[h];
-  const fMap = freq[state.appMode][h];
-  const key  = getBrushKey();
+  const set     = getRanges()[h];
+  const fMap    = freq[state.appMode][h];
+  const key     = getBrushKey();
+  const isFreq  = state.brushTexture === 'Hatched' || state.brushTexture === 'AllIn' || state.appMode === 'DEF_MASTER';
 
-  // Cycle: empty → 100 → 12.5 → 25 → 50 → 75 → erase (back to empty)
+  // Cycle steps for Freq mode
   const STEPS = [100, 12.5, 25, 50, 75];
 
-  const isHatched = key.endsWith('_Hatched');
-
   if (state.paintMode === 'add') {
+    // Drag-add: paint at freqBrush value (Freq mode) or 100% (Pure mode)
     set.add(key);
-    if (!isHatched) fMap[key] = 100;
+    fMap[key] = isFreq ? state.freqBrush : 100;
   } else if (state.paintMode === 'remove') {
     set.delete(key);
     delete fMap[key];
-  } else if (isHatched) {
-    // Hatched is binary: one click on, next click off
+  } else if (!isFreq) {
+    // ── PURE MODE: binary toggle ──────────────────────────────
     if (set.has(key)) {
       set.delete(key);
       delete fMap[key];
     } else {
       set.add(key);
+      fMap[key] = 100;
     }
   } else {
+    // ── FREQ MODE: cycle through steps ───────────────────────
     if (!set.has(key)) {
-      // Empty → first click: 100%
+      // Fresh cell: start at freqBrush value (from slider)
       set.add(key);
-      fMap[key] = 100;
+      fMap[key] = state.freqBrush;
     } else {
       const cur = fMap[key] ?? 100;
       const idx = STEPS.indexOf(cur);
-      if (idx === STEPS.length - 1) {
-        // Last step (75%) → erase completely, as if never clicked
+      if (idx === -1 || idx === STEPS.length - 1) {
+        // Unknown or last step → erase
         set.delete(key);
         delete fMap[key];
       } else {
@@ -2728,13 +4878,16 @@ function renderCell(h, diff) {
 
   // Draw stripes via pure helper
   const _fMap = freq[state.appMode][h] ?? {};
-  _getStripeItems(h).forEach(({ colorKey, hatched }) => {
+  _getStripeItems(h).forEach((item) => {
+    const { colorKey, hatched } = item;
     const s     = document.createElement('div');
     s.className = 'stripe';
     const color = colorKey === 'GTO' ? state.gtoColor : (state.colors[colorKey] ?? '#fff');
-    const bk = state.appMode === 'DEF_MASTER'
-      ? `${colorKey}_${hatched ? 'Call' : 'Raise'}`
-      : hatched ? `${colorKey}_Hatched` : colorKey;
+    const bk = (item && item.dmKey)
+      ? item.dmKey
+      : (state.appMode === 'DEF_MASTER'
+          ? `${colorKey}_${ hatched ? 'Call' : 'Raise' }`
+          : hatched ? `${colorKey}_Hatched` : colorKey);
     const f = _fMap[bk] ?? 100;
     if (hatched) {
       // Hatched is binary — always full pattern, no frequency
@@ -2784,11 +4937,15 @@ function _getStripeItems(h) {
         })
         .forEach(item => {
           const [pos, act] = item.split('_');
-          items.push({ colorKey: pos, hatched: act !== 'Raise' });
+          const ck = act === 'Raise' ? pos : act === 'Call' ? 'Call' : 'AllIn';
+          items.push({ colorKey: ck, hatched: false, dmKey: item });
         });
     } else {
       const key = getBrushKey();
-      if (set.has(key)) items.push({ colorKey: state.activeBrush, hatched: state.brushTexture !== 'Solid' });
+      if (set.has(key)) {
+        const ck2 = state.defMasterBrush === 'Raise' ? state.activeBrush : state.defMasterBrush === 'Call' ? 'Call' : 'AllIn';
+        items.push({ colorKey: ck2, hatched: false, dmKey: key });
+      }
     }
   }
   return items;
@@ -2843,7 +5000,7 @@ function updateStats() {
   const pct = ((combos / 1326) * 100).toFixed(1);
 
   const brushLabel = state.appMode === 'DEF_MASTER'
-    ? `${state.activeBrush} ${state.brushTexture === 'Solid' ? '3B' : 'Call'}`
+    ? `${state.activeBrush} ${state.brushTexture === 'Solid' ? '4B' : 'Call'}`
     : state.activeBrush;
 
   const brushName = $('brush-name');
@@ -2900,7 +5057,7 @@ function collectGridData() {
   const store = getRanges();
   const fMap  = freq[state.appMode];
   const keys  = [];
-  if      (state.appMode === 'DEF_MASTER') DEF_MASTER_POS.forEach(p => { keys.push(`${p}_Raise`); keys.push(`${p}_Call`); });
+  if      (state.appMode === 'DEF_MASTER') DEF_MASTER_POS.forEach(p => { keys.push(`${p}_Raise`); keys.push(`${p}_Call`); keys.push(`${p}_AllIn`); });
   else if (state.appMode === 'DEF_SPOT')   DEF_OPS.forEach(p => { keys.push(p); keys.push(`${p}_Hatched`); });
   else                                     POSITIONS.forEach(p => { keys.push(p); keys.push(`${p}_Hatched`); });
   const data = {};
@@ -3035,24 +5192,33 @@ function showHover(h) {
   // Hand name
   $('hb-bar-hand').textContent = h;
 
-  // Meta: hand type + combo count
+  // Meta: hand type + combo count + equity
   const isPair   = h.length === 2;
   const isSuited = h.endsWith('s');
   const isOff    = h.endsWith('o');
   const handType = isPair ? 'Pair' : isSuited ? 'Suited' : isOff ? 'Offsuit' : h;
   const combos   = COMBO_WEIGHTS[h] ?? 0;
+  const equity   = HAND_EQUITY[h] ?? null;
   const metaEl   = $('hb-bar-meta');
   if (metaEl) {
-    metaEl.innerHTML = `<span class="hb-meta-type">${handType}</span><span class="hb-meta-combos">${combos} combos</span>`;
+    // Equity color: green >60%, yellow 50-60%, red <50%
+    const eqColor = equity === null ? 'var(--muted)'
+      : equity >= 60 ? 'var(--good)'
+      : equity >= 50 ? '#f5a623'
+      : 'var(--bad)';
+    const eqHtml = equity !== null
+      ? `<span class="hb-meta-equity" style="color:${eqColor}">${equity.toFixed(1)}% eq</span>`
+      : '';
+    metaEl.innerHTML = `<span class="hb-meta-type">${handType}</span><span class="hb-meta-combos">${combos} combos</span>${eqHtml}`;
   }
 
   // Positions
   $('hb-bar-positions').innerHTML = list.map(p => {
     let action, actionColor, freqLabel = '';
     if (state.appMode === 'DEF_MASTER') {
-      action      = set.has(`${p}_Raise`) ? '3BET' : set.has(`${p}_Call`) ? 'CALL' : 'FOLD';
+      action      = set.has(`${p}_Raise`) ? '4BET' : set.has(`${p}_Call`) ? 'CALL' : 'FOLD';
       actionColor = action === 'FOLD' ? 'var(--dim)' : action === 'CALL' ? 'var(--good)' : (state.colors[p] ?? 'var(--accent)');
-      const fKey  = action !== 'FOLD' ? `${p}_${action === '3BET' ? 'Raise' : 'Call'}` : null;
+      const fKey  = action !== 'FOLD' ? `${p}_${action === '4BET' ? 'Raise' : 'Call'}` : null;
       const f     = fKey ? (fMap[h]?.[fKey] ?? 100) : null;
       if (f !== null && f < 100) freqLabel = `${f}%`;
     } else {
@@ -3084,7 +5250,7 @@ function openExport() {
   let out     = '';
 
   const lines = (hands, key) => {
-    const combos = hands.reduce((s, h) => s + COMBO_WEIGHTS[h], 0);
+    const combos = hands.reduce((s, h) => s + COMBO_WEIGHTS[h] * ((fMap[h]?.[key] ?? 100) / 100), 0);
     out += `=== ${key} (${((combos/1326)*100).toFixed(1)}%) ===\n`;
     if (!hands.length) { out += 'No hands\n\n'; return; }
     // Emit hand(freq%) — omit (100) for brevity since it is the default
@@ -3099,7 +5265,7 @@ function openExport() {
 
   if (state.appMode === 'DEF_MASTER') {
     DEF_MASTER_POS.forEach(pos =>
-      ['Raise','Call'].forEach(action =>
+      ['Raise','Call','AllIn'].forEach(action =>
         lines(ALL_HANDS.filter(h => store[h].has(`${pos}_${action}`)), `${pos}_${action}`)
       )
     );
@@ -3143,17 +5309,74 @@ function openImport() {
  * Accepts: "AA, KK(75), QQ(50), AKs(12.5)" or plain "AA, KK, QQ"
  * Returns: Array of { hand, freq } objects.
  */
+/**
+ * Expand range notation: JJ+, ATs+, T5o+, 66-99, ATs-AJs
+ * Returns array of hand strings
+ */
+function expandNotation(token) {
+  const R = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+  const ri = r => R.indexOf(r);
+
+  // Pair range: 66-99
+  const pairRng = token.match(/^([AKQJT2-9])\1-([AKQJT2-9])\2$/);
+  if (pairRng) {
+    const lo = Math.min(ri(pairRng[1]), ri(pairRng[2]));
+    const hi = Math.max(ri(pairRng[1]), ri(pairRng[2]));
+    return R.slice(lo, hi + 1).map(r => r + r);
+  }
+
+  // Pair plus: JJ+
+  const pairPlus = token.match(/^([AKQJT2-9])\1\+$/);
+  if (pairPlus) {
+    const hi = ri(pairPlus[1]);
+    return R.slice(0, hi + 1).map(r => r + r);
+  }
+
+  // Suited/offsuit plus: ATs+, T5o+
+  const sPlus = token.match(/^([AKQJT2-9])([AKQJT2-9])(s|o)\+$/);
+  if (sPlus) {
+    const [, r1, r2, suit] = sPlus;
+    const start = ri(r2);
+    const out   = [];
+    for (let i = start; i > ri(r1); i--) {
+      const h = r1 + R[i] + suit;
+      if (ALL_HANDS.includes(h)) out.push(h);
+    }
+    return out;
+  }
+
+  // Suited/offsuit range: ATs-AJs or T9s-T5s
+  const sRng = token.match(/^([AKQJT2-9])([AKQJT2-9])(s|o)-[AKQJT2-9]([AKQJT2-9])[so]$/);
+  if (sRng) {
+    const [, r1, r2lo, suit, r2hi] = sRng;
+    const lo = Math.min(ri(r2lo), ri(r2hi));
+    const hi = Math.max(ri(r2lo), ri(r2hi));
+    const out = [];
+    for (let i = lo; i <= hi; i++) {
+      const h = r1 + R[i] + suit;
+      if (ALL_HANDS.includes(h)) out.push(h);
+    }
+    return out;
+  }
+
+  return [token]; // plain hand, validated downstream
+}
+
 function parseHandList(str) {
-  return str.split(/[\s,;]+/)
-    .map(token => {
-      token = token.trim();
-      const m = token.match(/^([A-Za-z0-9]{2,3})\(([\d.]+)\)$/);
-      if (m) return { hand: m[1], freq: parseFloat(m[2]) };
-      const plain = token.replace(/[^A-Za-z0-9]/g, '');
-      if (plain.length >= 2 && plain.length <= 3) return { hand: plain, freq: 100 };
-      return null;
-    })
-    .filter(Boolean);
+  const results = [];
+  str.split(/[\s,;]+/).forEach(raw => {
+    raw = raw.trim();
+    if (!raw) return;
+    // Strip frequency annotation: KK(75) → token=KK, freq=75
+    const fm    = raw.match(/^(.+?)\(([\d.]+)\)$/);
+    const freq  = fm ? parseFloat(fm[2]) : 100;
+    const token = fm ? fm[1] : raw;
+    expandNotation(token).forEach(hand => {
+      hand = hand.replace(/[^A-Za-z0-9]/g, '');
+      if (hand.length >= 2 && hand.length <= 3) results.push({ hand, freq });
+    });
+  });
+  return results;
 }
 
 function confirmImport() {
@@ -3404,8 +5627,14 @@ const quiz = (() => {
     }
   }
 
+  function skipFeedback() {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; next(); }
+  }
+
   function handleKey(e) {
     if (!active) return;
+    // If buttons disabled = feedback showing → any key skips to next hand
+    if ($('quiz-btn-in').disabled) { skipFeedback(); return; }
     if (e.key === '1' || e.key === 'ArrowLeft')  answer(true);
     if (e.key === '2' || e.key === 'ArrowRight') answer(false);
   }
@@ -3625,7 +5854,7 @@ function handleKeyDown(e) {
   switch (e.key.toLowerCase()) {
     case 'r': setMode('RFI');        break;
     case 'd': setMode('DEF_SPOT');   break;
-    case 'm': setMode('DEF_MASTER'); break;
+    case 'v': setMode('DEF_MASTER'); break;
     case 's': setTexture('Solid');   break;
     case 'h': setTexture('Hatched'); break;
     case 'escape': closeModals();    break;
@@ -3760,6 +5989,1436 @@ window.addEventListener('beforeunload', () => { const a = $('radio-audio'); if (
       applyUITheme(localStorage.getItem(UI_KEY) || 'default');
     })();
 
-  </script>
+  
+
+// ══════════════════════════════════════════════════════════
+// STUDY TIMER
+// ══════════════════════════════════════════════════════════
+(function() {
+  let seconds = 0;
+  const el = document.getElementById('topbar-timer');
+  setInterval(() => {
+    seconds++;
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    if (el) {
+      el.textContent = m + ':' + s;
+      if (seconds === 1) el.classList.add('timer-active');
+    }
+  }, 1000);
+})();
+
+// ══════════════════════════════════════════════════════════
+// SCENARIO LABEL — updates on preset load & position change
+// ══════════════════════════════════════════════════════════
+function updateScenarioLabel() {
+  const modeEl = document.getElementById('scenario-mode');
+  const nameEl = document.getElementById('scenario-name');
+  const posEl  = document.getElementById('scenario-pos');
+  if (!modeEl) return;
+
+  const modeMap = { RFI: 'OPEN', DEF_SPOT: 'DEF', DEF_MASTER: 'V3B' };
+  modeEl.textContent = modeMap[state.appMode] ?? state.appMode;
+
+  // Get active preset name from select
+  const sel  = document.getElementById('preset-sel');
+  const name = sel?.options[sel.selectedIndex]?.text ?? 'No preset';
+  nameEl.textContent = name === '—' ? 'No preset loaded' : name;
+
+  // Active position
+  const pos  = state.activePos;
+  if (posEl && pos) {
+    posEl.textContent  = pos;
+    posEl.style.color  = state.colors[pos] ?? 'var(--accent)';
+    posEl.style.background = (state.colors[pos] ?? '#4da6ff') + '18';
+    posEl.style.borderColor = (state.colors[pos] ?? '#4da6ff') + '55';
+  }
+}
+
+// Patch into existing state changes — observe preset-sel and mode buttons
+document.addEventListener('DOMContentLoaded', () => {
+  // Observe changes that affect scenario label
+  ['preset-sel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateScenarioLabel);
+  });
+  // Observe position pills
+  document.querySelectorAll('.pos-pill').forEach(p => {
+    p.addEventListener('click', () => setTimeout(updateScenarioLabel, 50));
+  });
+  // Observe mode buttons
+  ['mode-rfi','mode-def-spot','mode-def-master'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => setTimeout(updateScenarioLabel, 50));
+  });
+  // Initial render
+  setTimeout(updateScenarioLabel, 200);
+});
+
+// ══════════════════════════════════════════════════════════
+function duplicatePreset() {
+  const sel = document.getElementById('preset-sel');
+  if (!sel || !sel.value) { showInfo('Select a preset to duplicate.'); return; }
+  const db   = loadStorage();
+  const item = db[sel.value];
+  if (!item) { showInfo('Preset not found.'); return; }
+  const newId   = Date.now().toString();
+  const newName = (item.name ?? 'Preset') + ' (copy)';
+  db[newId] = Object.assign({}, JSON.parse(JSON.stringify(item)), { name: newName, id: newId, builtin: false });
+  saveStorage(db);
+  if (typeof refreshPresetList === 'function') refreshPresetList();
+  showInfo('Duplicated as: ' + newName);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-duplicate');
+  if (btn) btn.addEventListener('click', duplicatePreset);
+});
+
+// ══════════════════════════════════════════════════════════
+// RANGE NOTES
+// ══════════════════════════════════════════════════════════
+function loadRangeNotes(presetKey) {
+  const wrap    = document.getElementById('range-notes-wrap');
+  const display = document.getElementById('range-notes-display');
+  const edit    = document.getElementById('range-notes-edit');
+  if (!wrap || !display || !edit) return;
+
+  if (!presetKey) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  const db   = loadStorage();
+  const note = db[presetKey]?.notes ?? '';
+  display.textContent = note || '(no notes — click to add)';
+  display.style.color = note ? 'var(--muted)' : 'var(--dim)';
+  edit.value = note;
+  edit.style.display = 'none';
+  document.getElementById('range-notes-btns').style.display = 'none';
+}
+
+function saveRangeNotes() {
+  const sel  = document.getElementById('preset-sel');
+  if (!sel?.value) return;
+  const edit = document.getElementById('range-notes-edit');
+  const db   = loadStorage();
+  if (!db[sel.value]) return;
+  db[sel.value].notes = edit?.value?.trim() ?? '';
+  saveStorage(db);
+  loadRangeNotes(sel.value);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const display = document.getElementById('range-notes-display');
+  const edit    = document.getElementById('range-notes-edit');
+  const btns    = document.getElementById('range-notes-btns');
+
+  if (display) {
+    display.style.cursor = 'pointer';
+    display.addEventListener('click', () => {
+      display.style.display = 'none';
+      edit.style.display    = 'block';
+      btns.style.display    = 'flex';
+      edit.focus();
+    });
+  }
+  const saveBtn   = document.getElementById('btn-notes-save');
+  const cancelBtn = document.getElementById('btn-notes-cancel');
+  if (saveBtn)   saveBtn.addEventListener('click',   saveRangeNotes);
+  if (cancelBtn) cancelBtn.addEventListener('click', () => {
+    const sel = document.getElementById('preset-sel');
+    loadRangeNotes(sel?.value);
+  });
+
+  // Hook into preset-sel changes
+  const sel = document.getElementById('preset-sel');
+  if (sel) sel.addEventListener('change', () => loadRangeNotes(sel.value));
+
+  // Also update scenario label on preset load
+  const loadBtn = document.getElementById('btn-load');
+  if (loadBtn) loadBtn.addEventListener('click', () => {
+    setTimeout(() => {
+      const s = document.getElementById('preset-sel');
+      loadRangeNotes(s?.value);
+      updateScenarioLabel();
+    }, 100);
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  // Don't fire when typing in inputs
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  // Don't fire during quiz (handled separately)
+  const quizOpen = document.getElementById('quiz-modal')?.style.display === 'flex';
+
+  switch(e.key) {
+    case '?':
+      document.getElementById('shortcuts-modal').style.display = 'flex'; break;
+    case 'Escape':
+      document.querySelectorAll('.modal-bg').forEach(m => {
+        if (m.style.display === 'flex') m.style.display = 'none';
+      }); break;
+    case 'l': case 'L':
+      if (!quizOpen) document.getElementById('btn-load')?.click(); break;
+    case 's': case 'S':
+      if (!quizOpen) document.getElementById('btn-save')?.click(); break;
+    case 'q': case 'Q':
+      if (!quizOpen) document.getElementById('btn-quiz')?.click(); break;
+    case 'c': case 'C':
+      if (!quizOpen) document.getElementById('btn-clear')?.click(); break;
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+// QUIZ ENHANCEMENTS — position filter + hand history
+// ══════════════════════════════════════════════════════════
+(function patchQuiz() {
+  // We patch after DOM ready since quiz object is already defined
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // ── Populate position filter when quiz opens ───────────
+    const origOpen = quiz.open.bind(quiz);
+    quiz.open = function() {
+      // Populate position filter based on current preset
+      const key   = document.getElementById('quiz-preset-sel')?.value;
+      const db    = loadStorage();
+      const item  = db[key];
+      const mode  = item?.mode ?? 'RFI';
+      const axis  = mode === 'DEF_SPOT'  ? (typeof DEF_OPS !== 'undefined' ? DEF_OPS : [])
+                  : mode === 'DEF_MASTER' ? (typeof DEF_MASTER_POS !== 'undefined' ? DEF_MASTER_POS : []) // vs-3bet positions
+                  : (typeof POSITIONS !== 'undefined' ? POSITIONS : []);
+      const filterSel = document.getElementById('quiz-pos-filter');
+      if (filterSel) {
+        filterSel.innerHTML = '<option value="ALL">All Positions</option>';
+        axis.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p; opt.textContent = p;
+          filterSel.appendChild(opt);
+        });
+      }
+      // Reset history
+      updateQuizHistory([], true);
+      origOpen();
+    };
+
+    // ── Filter pool by selected position ──────────────────
+    // We wrap pickFromPool by monkey-patching next()
+    const origAnswer = quiz.answer.bind(quiz);
+    quiz.answer = function(ans) {
+      origAnswer(ans);
+      // Track last answer for history — we read feedback after a tick
+      setTimeout(() => {
+        const fb = document.getElementById('quiz-feedback')?.innerHTML ?? '';
+        const correct = fb.includes('CORRECT');
+        // Get current hand from display
+        const hand = document.getElementById('quiz-hand')?.textContent ?? '?';
+        pushQuizHistory(hand, correct);
+      }, 50);
+    };
+  });
+})();
+
+// Hand history ring buffer
+let quizHistoryBuf = [];
+const HIST_MAX = 5;
+
+function pushQuizHistory(hand, correct) {
+  quizHistoryBuf.push({ hand, correct });
+  if (quizHistoryBuf.length > HIST_MAX) quizHistoryBuf.shift();
+  renderQuizHistory();
+}
+
+function updateQuizHistory(buf, reset) {
+  if (reset) quizHistoryBuf = [];
+  renderQuizHistory();
+}
+
+function renderQuizHistory() {
+  const container = document.getElementById('quiz-history');
+  if (!container) return;
+  container.innerHTML = '';
+  // Fill from left: show empties then items
+  const slots = HIST_MAX;
+  const empties = slots - quizHistoryBuf.length;
+  for (let i = 0; i < empties; i++) {
+    const d = document.createElement('div');
+    d.className = 'quiz-hist-item quiz-hist-item--empty';
+    d.textContent = '·';
+    container.appendChild(d);
+  }
+  quizHistoryBuf.forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'quiz-hist-item ' + (item.correct ? 'quiz-hist-item--correct' : 'quiz-hist-item--wrong');
+    d.textContent = item.hand.length <= 3 ? item.hand : item.hand.slice(0,3);
+    d.title = item.hand + ' — ' + (item.correct ? '✓' : '✗');
+    container.appendChild(d);
+  });
+}
+
+
+
+// ── Topbar active preset name ──────────────────────────────
+function updateTopbarPreset(name) {
+  const wrap = document.getElementById('topbar-active-preset');
+  const el   = document.getElementById('topbar-preset-name');
+  if (!wrap || !el) return;
+  if (name && name !== '—' && name.trim() !== '') {
+    el.textContent     = name;
+    wrap.style.display = 'flex';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadBtn = document.getElementById('btn-load');
+    if (loadBtn) loadBtn.addEventListener('click', () => {
+      setTimeout(() => {
+        const sel  = document.getElementById('preset-sel');
+        const name = sel?.options[sel.selectedIndex]?.text ?? '';
+        updateTopbarPreset(name);
+        updateScenarioLabel();
+      }, 120);
+    });
+  });
+})();
+
+// ── Compare % row ──────────────────────────────────────────
+(function patchCompare() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const compBtn = document.getElementById('comp-btn');
+    if (!compBtn) return;
+    // Observe the compare result cells being updated
+    const observer = new MutationObserver(() => {
+      const extraEl = document.getElementById('cmp-extra');
+      const missEl  = document.getElementById('cmp-miss');
+      const sameEl  = document.getElementById('cmp-same');
+      const pctRow  = document.getElementById('cmp-pct-row');
+      if (!extraEl || !missEl || !sameEl || !pctRow) return;
+      const extra = parseInt(extraEl.textContent) || 0;
+      const miss  = Math.abs(parseInt(missEl.textContent)) || 0;
+      const same  = parseInt(sameEl.textContent) || 0;
+      const totalA = same + extra;
+      const totalB = same + miss;
+      const total  = extra + miss + same;
+      if (total > 0 && (extra > 0 || miss > 0)) {
+        pctRow.style.display = 'block';
+        const overlapA = totalA > 0 ? Math.round(same / totalA * 100) : 0;
+        const overlapB = totalB > 0 ? Math.round(same / totalB * 100) : 0;
+        pctRow.textContent = `A overlap ${overlapA}%  ·  B overlap ${overlapB}%`;
+      } else {
+        pctRow.style.display = 'none';
+      }
+    });
+    ['cmp-extra','cmp-miss','cmp-same'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  });
+})();
+
+</script>
+
+<!-- Shortcuts modal -->
+<div class="modal-bg" id="shortcuts-modal">
+  <div class="modal-card modal-shortcuts">
+    <div class="card-title">Keyboard Shortcuts</div>
+    <table class="shortcuts-table">
+      <tr><td><span class="kbd">1</span> / <span class="kbd">←</span></td><td class="sh-desc">In Range</td></tr>
+      <tr><td><span class="kbd">2</span> / <span class="kbd">→</span></td><td class="sh-desc">Fold (during quiz)</td></tr>
+      <tr><td><span class="kbd">L</span></td><td class="sh-desc">Load selected preset</td></tr>
+      <tr><td><span class="kbd">S</span></td><td class="sh-desc">Quick save</td></tr>
+      <tr><td><span class="kbd">D</span></td><td class="sh-desc">Duplicate preset</td></tr>
+      <tr><td><span class="kbd">Q</span></td><td class="sh-desc">Start quiz</td></tr>
+      <tr><td><span class="kbd">C</span></td><td class="sh-desc">Clear grid</td></tr>
+      <tr><td><span class="kbd">Esc</span></td><td class="sh-desc">Close modal / exit quiz</td></tr>
+      <tr><td><span class="kbd">?</span></td><td class="sh-desc">Show this panel</td></tr>
+    </table>
+    <button style="margin-top:16px;width:100%" onclick="document.getElementById('shortcuts-modal').style.display='none'">Close</button>
+  </div>
+</div>
+<style>
+/* ═══════════════════════════════════════
+   WESOLVE v7 — ELEMENT OVERHAULS
+   Quiz modal, Radio bar, Modal windows
+   ═══════════════════════════════════════ */
+
+/* ── QUIZ MODAL — full redesign ─────── */
+.modal-quiz {
+  width: 380px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  text-align: left !important;
+  background: var(--ws-base, #0a0f1c) !important;
+  border: 1px solid var(--ws-edge-2, #263552) !important;
+}
+
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--ws-edge, #1e2d48);
+  background: var(--ws-deep, #060a12);
+}
+.quiz-header-left { display: flex; align-items: center; gap: 12px; }
+
+.quiz-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.46rem;
+  font-weight: 500;
+  letter-spacing: 3px;
+  color: var(--ws-muted, #3d5278);
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
+.quiz-streak-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ws-gold, #e8a020);
+  min-width: 40px;
+}
+
+.quiz-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ws-muted, #3d5278);
+  letter-spacing: 0.5px;
+  margin-bottom: 0 !important;
+}
+
+/* Hand stage — the dramatic moment */
+.quiz-hand-stage {
+  position: relative;
+  padding: 36px 24px 28px;
+  text-align: center;
+  overflow: hidden;
+  background: var(--ws-base, #0a0f1c);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Subtle 13×13 ghost grid behind the hand */
+.quiz-hand-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.035) 1px, transparent 1px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 80%);
+  pointer-events: none;
+}
+
+.quiz-hand-stage::after {
+  content: '';
+  position: absolute;
+  top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 240px; height: 120px;
+  background: radial-gradient(ellipse, rgba(59,130,246,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.quiz-hand-big {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 5rem !important;
+  font-weight: 400 !important;
+  letter-spacing: -4px !important;
+  line-height: 1 !important;
+  margin-bottom: 12px !important;
+  background: linear-gradient(140deg, #dde6f5 20%, #60a5fa 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  position: relative;
+  z-index: 1;
+}
+
+.quiz-pos-line {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.58rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 6px !important;
+  color: var(--ws-muted, #3d5278) !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0 !important;
+  position: relative;
+  z-index: 1;
+}
+
+.quiz-why-line {
+  font-size: 0.52rem;
+  color: var(--ws-muted, #3d5278);
+  letter-spacing: 0.8px;
+  min-height: 14px;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Answer buttons — full-width split, no gap */
+.quiz-answer-group {
+  display: flex !important;
+  gap: 0 !important;
+  margin-bottom: 0 !important;
+  border-top: 1px solid var(--ws-edge, #1e2d48);
+}
+
+.quiz-btn-in,
+.quiz-btn-fold {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 20px 12px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  font-family: 'DM Mono', monospace !important;
+  cursor: pointer !important;
+  transition: background 0.12s !important;
+  position: relative !important;
+  box-shadow: none !important;
+}
+
+.quiz-btn-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+.quiz-btn-key {
+  display: block;
+  font-size: 0.46rem;
+  opacity: 0.35;
+  letter-spacing: 1px;
+  font-weight: 400;
+}
+
+.quiz-btn-in {
+  background: rgba(16,208,122,0.05) !important;
+  color: var(--ws-green, #10d07a) !important;
+  border-right: 1px solid var(--ws-edge, #1e2d48) !important;
+}
+.quiz-btn-in:hover  { background: rgba(16,208,122,0.12) !important; transform: none !important; }
+.quiz-btn-in:active { background: rgba(16,208,122,0.18) !important; transform: none !important; }
+
+.quiz-btn-fold {
+  background: rgba(240,64,96,0.04) !important;
+  color: var(--ws-red, #f04060) !important;
+}
+.quiz-btn-fold:hover  { background: rgba(240,64,96,0.1) !important; transform: none !important; }
+.quiz-btn-fold:active { background: rgba(240,64,96,0.15) !important; transform: none !important; }
+
+/* History strip */
+.quiz-history {
+  display: flex !important;
+  gap: 4px !important;
+  justify-content: center !important;
+  padding: 10px 20px 4px !important;
+  min-height: auto !important;
+  margin-bottom: 0 !important;
+}
+
+.quiz-feedback {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--ws-muted, #3d5278);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 4px 20px 10px;
+  height: auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.quiz-pos-filter {
+  padding: 10px 20px !important;
+  margin-top: 0 !important;
+  border-top: 1px solid var(--ws-edge, #1e2d48) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.quiz-pos-filter label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.46rem;
+  letter-spacing: 2.5px;
+  color: var(--ws-muted, #3d5278);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.quiz-pos-filter select {
+  flex: 1 !important;
+  margin-bottom: 0 !important;
+  height: 28px !important;
+  font-size: 0.62rem !important;
+  padding: 4px 28px 4px 8px !important;
+}
+
+.quiz-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px 18px;
+}
+.quiz-exit {
+  flex: 1;
+  background: transparent !important;
+  border: 1px solid var(--ws-edge, #1e2d48) !important;
+  color: var(--ws-muted, #3d5278) !important;
+  font-size: 0.65rem !important;
+  border-radius: 5px !important;
+  padding: 8px !important;
+  margin-bottom: 0 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  box-shadow: none !important;
+  transition: background 0.12s, border-color 0.12s, color 0.12s !important;
+}
+.quiz-exit:hover {
+  background: var(--ws-surface, #0e1525) !important;
+  color: var(--ws-sub, #7a94c0) !important;
+  border-color: var(--ws-edge-2, #263552) !important;
+  transform: none !important;
+}
+
+/* Modal overlay — deeper, more dramatic */
+.modal-bg {
+  background: rgba(2,4,9,0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.modal-card {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 0 0 1px rgba(59,130,246,0.08),
+    0 40px 120px rgba(0,0,0,0.97),
+    0 8px 40px rgba(0,0,0,0.8) !important;
+  animation: wsModalIn 0.22s cubic-bezier(0.16,1,0.3,1) forwards !important;
+}
+@keyframes wsModalIn {
+  from { opacity:0; transform: scale(0.96) translateY(10px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+/* Non-quiz modals — add header strip to card-title */
+.modal-export,
+.modal-import,
+.modal-saveas,
+.modal-confirm {
+  padding: 0 !important;
+}
+.modal-export .card-title,
+.modal-import .card-title,
+.modal-saveas .card-title,
+.modal-confirm .card-title {
+  padding: 13px 20px !important;
+  margin: 0 !important;
+  background: var(--ws-deep, #060a12) !important;
+  border-bottom: 1px solid var(--ws-edge, #1e2d48) !important;
+  border-radius: 0 !important;
+}
+.modal-export > *:not(.card-title),
+.modal-import > *:not(.card-title),
+.modal-saveas > *:not(.card-title),
+.modal-confirm > *:not(.card-title) {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+.modal-export > *:first-child:not(.card-title),
+.modal-import > *:first-child:not(.card-title),
+.modal-saveas > *:first-child:not(.card-title),
+.modal-confirm > *:first-child:not(.card-title),
+.modal-export .card-title + *,
+.modal-import .card-title + *,
+.modal-saveas .card-title + *,
+.modal-confirm .card-title + * { padding-top: 16px !important; }
+.modal-export > *:last-child,
+.modal-import > *:last-child,
+.modal-saveas > *:last-child,
+.modal-confirm > *:last-child { padding-bottom: 18px !important; }
+
+/* ── RADIO BAR — pro dock ───────────── */
+#radio-bar {
+  height: 44px !important;
+  background: rgba(2,4,9,0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid var(--ws-edge, #1e2d48) !important;
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.025) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+}
+
+.radio-status {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 14px !important;
+  border-right: 1px solid var(--ws-edge, #1e2d48) !important;
+  height: 100% !important;
+  flex-shrink: 0 !important;
+  min-width: 130px !important;
+}
+
+.radio-brand-mark {
+  color: var(--ws-accent, #3b82f6);
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.radio-eq-bar {
+  display: flex !important;
+  gap: 2px !important;
+  align-items: flex-end !important;
+  height: 14px !important;
+  opacity: 0.3 !important;
+  transition: opacity 0.3s !important;
+}
+.radio-eq-bar div { width: 2px !important; background: var(--ws-accent, #3b82f6) !important; border-radius: 1px !important; }
+
+.radio-now {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.5rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 1.5px !important;
+  color: var(--ws-muted, #3d5278) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 70px !important;
+  min-width: 50px !important;
+}
+
+.radio-stations {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.rstation {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 13px !important;
+  height: 44px !important;
+  cursor: pointer !important;
+  border-right: 1px solid var(--ws-edge, #1e2d48) !important;
+  transition: background 0.12s !important;
+  border-radius: 0 !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
+.rstation:hover { background: rgba(255,255,255,0.018) !important; }
+.rstation.playing { background: rgba(59,130,246,0.04) !important; }
+.rstation.playing::before {
+  content: '';
+  position: absolute;
+  top: 9px; bottom: 9px; left: 0;
+  width: 2px;
+  background: var(--ws-accent, #3b82f6);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 6px rgba(59,130,246,0.5);
+}
+.rstation::after { display: none !important; }
+
+.rstation-icon {
+  color: var(--ws-muted, #3d5278);
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+.rstation:hover .rstation-icon,
+.rstation.playing .rstation-icon { color: var(--ws-sub, #7a94c0); }
+
+.rstation-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.5rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--ws-muted, #3d5278) !important;
+  transition: color 0.12s !important;
+}
+.rstation:hover .rstation-label,
+/* rstation.playing .rstation-label — canonical rule in main stylesheet */
+
+.radio-vol-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 14px !important;
+  border-left: 1px solid var(--ws-edge, #1e2d48) !important;
+  height: 100% !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}
+
+.radio-vol-input {
+  width: 68px !important;
+  height: 3px !important;
+  accent-color: var(--ws-accent, #3b82f6) !important;
+  cursor: pointer !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.15s !important;
+}
+.radio-vol-input:hover { opacity: 1 !important; }
+
+/* ── QUIZ SIDEBAR BUTTON ─────────────── */
+.quiz-btn {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 16px !important;
+  background: transparent !important;
+  border: 1px solid rgba(16,208,122,0.18) !important;
+  border-radius: 7px !important;
+  color: var(--good, #10d07a) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.62rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+  transition: background 0.18s, border-color 0.18s, color 0.18s !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+.quiz-btn::before { display: none !important; }
+.quiz-btn::after {
+  content: '→' !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.7rem !important;
+  opacity: 0.3 !important;
+  transition: opacity 0.18s, transform 0.18s !important;
+  pointer-events: none !important;
+  position: static !important;
+  background: none !important;
+  transform: translateX(0) !important;
+  width: auto !important;
+  height: auto !important;
+  left: auto !important;
+  border-radius: 0 !important;
+  inset: auto !important;
+  top: auto !important;
+  display: inline !important;
+}
+.quiz-btn:hover:not(:disabled) {
+  background: rgba(16,208,122,0.05) !important;
+  border-color: rgba(16,208,122,0.4) !important;
+  box-shadow: 0 0 0 3px rgba(16,208,122,0.05), 0 4px 20px rgba(16,208,122,0.06) !important;
+  transform: none !important;
+  color: var(--good, #10d07a) !important;
+}
+.quiz-btn:hover:not(:disabled)::after {
+  opacity: 0.7 !important;
+  transform: translateX(4px) !important;
+}
+
+[data-ui-theme] .quiz-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(16,208,122,0.18) !important;
+  color: var(--good) !important;
+}
+[data-ui-theme="elite"] .quiz-btn { border-color: rgba(212,170,80,0.25) !important; color: var(--good) !important; }
+
+</style>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   WESOLVE v8 — PANELS, MODE RAIL, SEG CONTROLS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── PANEL SYSTEM ───────────────────────────────────────
+   Replaces .card entirely. Two tiers: primary + secondary.
+   Every panel has a real header/body separation.
+   ─────────────────────────────────────────────────────── */
+.panel {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ws-edge, #1e2d48);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.025);
+  transition: box-shadow 0.2s;
+}
+.panel:hover {
+  box-shadow: 0 6px 32px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* PRIMARY panel — slightly brighter, more presence */
+.panel--primary {
+  background: var(--ws-surface, #0e1525);
+  border-color: var(--ws-edge-2, #263552);
+}
+/* Primary panel header — slightly brighter label */
+.panel--primary .panel-header {
+  background: var(--ws-lift, #131c30);
+}
+.panel--primary .panel-header-label {
+  color: var(--ws-sub, #7a94c0);
+  letter-spacing: 2px;
+}
+
+/* SECONDARY panel — more recessed, supportive role */
+.panel--secondary {
+  background: var(--ws-base, #0a0f1c);
+  border-color: var(--ws-edge, #1e2d48);
+}
+
+/* Panel header — always dark, always separated */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--ws-deep, #060a12);
+  border-bottom: 1px solid var(--ws-edge, #1e2d48);
+  min-height: 32px;
+}
+
+.panel-header-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.46rem;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ws-muted, #3d5278);
+  user-select: none;
+}
+
+/* Small inline action in header (e.g. "Save as new…") */
+.panel-header-action {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.46rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.5px !important;
+  color: var(--ws-muted, #3d5278) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  transition: color 0.12s, background 0.12s !important;
+  margin-bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.panel-header-action:hover {
+  color: var(--ws-sub, #7a94c0) !important;
+  background: var(--ws-surface, #0e1525) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Panel body */
+.panel-body {
+  padding: 14px;
+}
+.panel-body--flush {
+  padding: 0;
+}
+
+/* Ensure card-title inside any .card (legacy) doesn't conflict */
+.card .card-title {
+  padding: 9px 14px !important;
+  margin-bottom: 0 !important;
+  background: var(--ws-deep, #060a12) !important;
+  border-bottom: 1px solid var(--ws-edge, #1e2d48) !important;
+}
+.card > *:not(.card-title) {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.card > .card-title + * { padding-top: 12px !important; }
+.card > *:last-child { padding-bottom: 14px !important; }
+
+
+/* ── MODE RAIL — Core Engine ────────────────────────────
+   Vertical nav. Active item = blue left bar + brighter.
+   Inactive = dim text, no border. Hover = subtle reveal.
+   ─────────────────────────────────────────────────────── */
+.mode-rail {
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-rail-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--ws-edge, #1e2d48) !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: background 0.12s !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  min-height: 32px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  position: relative !important;
+  transform: none !important;
+}
+.mode-rail-item:last-child {
+  border-bottom: none !important;
+}
+.mode-rail-item:hover {
+  background: rgba(255,255,255,0.02) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* The left indicator bar — invisible when inactive */
+.mode-rail-indicator {
+  display: block;
+  width: 3px;
+  height: 100%;
+  min-height: 32px;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.mode-rail-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  flex: 1;
+}
+
+.mode-rail-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--ws-muted, #3d5278);
+  letter-spacing: 0.1px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+/* ACTIVE state */
+.mode-rail-item--active {
+  background: rgba(59,130,246,0.05) !important;
+}
+.mode-rail-item--active .mode-rail-indicator {
+  background: var(--ws-accent, #3b82f6);
+  box-shadow: 0 0 8px rgba(59,130,246,0.4);
+}
+.mode-rail-item--active .mode-rail-name {
+  color: var(--ws-text, #dde6f5);
+  font-weight: 600;
+}
+.mode-rail-item--active:hover {
+  background: rgba(59,130,246,0.07) !important;
+}
+.mode-rail-item:hover .mode-rail-name {
+  color: var(--ws-sub, #7a94c0);
+}
+
+
+/* ── SEGMENTED CONTROL ──────────────────────────────────
+   Pure/Freq and All/Solo — single surface, sliding feel.
+   ─────────────────────────────────────────────────────── */
+.seg-control {
+  display: flex;
+  background: var(--ws-deep, #060a12);
+  border: 1px solid var(--ws-edge, #1e2d48);
+  border-radius: 7px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.seg-btn {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 8px 6px !important;
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid var(--ws-edge, #1e2d48) !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  transition: background 0.12s, color 0.12s !important;
+  margin-bottom: 0 !important;
+  width: auto !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+.seg-btn:last-child {
+  border-right: none !important;
+}
+.seg-btn:hover:not(.seg-btn--active) {
+  background: rgba(255,255,255,0.03) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.seg-btn-name {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ws-muted, #3d5278);
+  letter-spacing: 0.2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.seg-btn-sub {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.44rem;
+  font-weight: 400;
+  color: var(--ws-dim, #273450);
+  letter-spacing: 1px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+/* ACTIVE state */
+.seg-btn--active {
+  background: var(--ws-accent-lo, rgba(59,130,246,0.12)) !important;
+}
+.seg-btn--active .seg-btn-name {
+  color: var(--ws-accent-hi, #60a5fa);
+}
+.seg-btn--active .seg-btn-sub {
+  color: rgba(96,165,250,0.5);
+}
+.seg-btn:hover:not(.seg-btn--active) .seg-btn-name {
+  color: var(--ws-sub, #7a94c0);
+}
+
+
+/* ── Save row ───────────────────────────────────────── */
+.lib-save-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 20px;
+}
+.lib-save-btn {
+  flex: 1;
+  height: 30px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  letter-spacing: 0.2px;
+}
+.lib-save-btn--primary {
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.35);
+  color: #93c5fd;
+}
+.lib-save-btn--primary:hover {
+  background: rgba(59,130,246,0.25);
+  border-color: rgba(59,130,246,0.55);
+}
+.lib-save-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--ws-edge, #1e2d48);
+  color: var(--ws-sub, #7a94c0);
+}
+.lib-save-btn--ghost:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--ws-text, #dde6f5);
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* ── Mode rail per-color overrides ─────────────────── */
+.mode-rail-sub {
+  font-size: 0.44rem;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  margin-top: 3px;
+  font-family: 'DM Mono', monospace;
+  transition: color 0.12s;
+}
+
+/* Opening — cool blue */
+.mode-btn-rfi .mode-rail-name       { color: #64a0e8; }
+.mode-btn-rfi .mode-rail-sub        { color: rgba(100,160,232,0.35); }
+.mode-btn-rfi .mode-rail-indicator  { background: transparent; }
+.mode-btn-rfi.mode-rail-item--active { background: rgba(100,160,232,0.07) !important; }
+.mode-btn-rfi.mode-rail-item--active .mode-rail-name { color: #93c5fd; font-weight: 700; }
+.mode-btn-rfi.mode-rail-item--active .mode-rail-sub  { color: rgba(147,197,253,0.5); }
+.mode-btn-rfi.mode-rail-item--active .mode-rail-indicator { background: #93c5fd; box-shadow: 0 0 8px rgba(147,197,253,0.5); }
+.mode-btn-rfi:hover:not(.mode-rail-item--active) .mode-rail-name { color: #93c5fd; }
+
+/* Defense — warm amber */
+.mode-btn-def .mode-rail-name       { color: #c9924a; }
+.mode-btn-def .mode-rail-sub        { color: rgba(201,146,74,0.35); }
+.mode-btn-def .mode-rail-indicator  { background: transparent; }
+.mode-btn-def.mode-rail-item--active { background: rgba(201,146,74,0.07) !important; }
+.mode-btn-def.mode-rail-item--active .mode-rail-name { color: #fbbf24; font-weight: 700; }
+.mode-btn-def.mode-rail-item--active .mode-rail-sub  { color: rgba(251,191,36,0.5); }
+.mode-btn-def.mode-rail-item--active .mode-rail-indicator { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.5); }
+.mode-btn-def:hover:not(.mode-rail-item--active) .mode-rail-name { color: #fbbf24; }
+
+/* Overview — soft violet */
+.mode-btn-master .mode-rail-name       { color: #9a7ec8; }
+.mode-btn-master .mode-rail-sub        { color: rgba(154,126,200,0.35); }
+.mode-btn-master .mode-rail-indicator  { background: transparent; }
+.mode-btn-master.mode-rail-item--active { background: rgba(154,126,200,0.07) !important; }
+.mode-btn-master.mode-rail-item--active .mode-rail-name { color: #c4b5fd; font-weight: 700; }
+.mode-btn-master.mode-rail-item--active .mode-rail-sub  { color: rgba(196,181,253,0.5); }
+.mode-btn-master.mode-rail-item--active .mode-rail-indicator { background: #c4b5fd; box-shadow: 0 0 8px rgba(196,181,253,0.5); }
+.mode-btn-master:hover:not(.mode-rail-item--active) .mode-rail-name { color: #c4b5fd; }
+
+/* ── LOAD BUTTON slim ───────────────────────────────── */
+.btn-load-slim {
+  height: 30px !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  border-radius: 6px !important;
+  letter-spacing: 0.2px !important;
+  cursor: pointer !important;
+  background: rgba(59,130,246,0.15) !important;
+  border: 1px solid rgba(59,130,246,0.35) !important;
+  color: #93c5fd !important;
+  transition: background 0.12s, border-color 0.12s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.btn-load-slim:hover {
+  background: rgba(59,130,246,0.25) !important;
+  border-color: rgba(59,130,246,0.55) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── LOAD BUTTON — dominant primary ─────────────────── */
+.btn-load-main {
+  font-size: 0.74rem !important;
+  font-weight: 600 !important;
+  height: 38px !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  margin-bottom: 0 !important;
+  letter-spacing: 0.2px !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+.btn-save-main {
+  height: 32px !important;
+  font-size: 0.68rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* ── MISC ────────────────────────────────────────────── */
+/* quiz-card-sub — canonical rule in main stylesheet */
+
+.cmp-inline-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.46rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: var(--ws-muted, #3d5278) !important;
+  margin-bottom: 4px !important;
+}
+
+/* sel-section inside panel-body */
+.panel-body .sel-section {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--ws-edge, #1e2d48);
+}
+.panel-body .sel-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+/* Ghost check row */
+.ghost-check-row {
+  background: var(--ws-surface, #0e1525) !important;
+  border: 1px solid var(--ws-edge, #1e2d48) !important;
+  border-radius: 5px !important;
+  padding: 7px 10px !important;
+}
+.ghost-check-row label {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 400 !important;
+  color: var(--ws-sub, #7a94c0) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* Stats divider in panel */
+.panel-body .stats-divider {
+  border-top: 1px solid var(--ws-edge, #1e2d48) !important;
+  padding-top: 8px !important;
+  margin-top: 8px !important;
+}
+
+/* compare summary in panel */
+.cmp-summary {
+  border: 1px solid var(--ws-edge, #1e2d48) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  margin-top: 10px !important;
+}
+.cmp-cell {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 10px 8px !important;
+}
+.cmp-cell-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.48rem !important;
+  letter-spacing: 1px !important;
+  color: var(--ws-muted, #3d5278) !important;
+  margin-top: 3px !important;
+}
+
+/* Ghost opacity label */
+.ghost-opacity-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.58rem !important;
+  color: var(--ws-muted, #3d5278) !important;
+  min-width: 32px !important;
+  text-align: right !important;
+}
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   CANONICAL OVERRIDES — these always win, placed last
+   ══════════════════════════════════════════════════════ */
+
+/* Section labels — distinct from panel headers */
+.label-sm {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.6rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  text-transform: none !important;
+  color: var(--ws-sub, #7a94c0) !important;
+  margin-bottom: 6px !important;
+  opacity: 0.8;
+}
+
+/* Smart Quiz description — feature callout style */
+.quiz-card-sub {
+  font-size: 0.58rem !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--ws-muted, #3d5278) !important;
+  line-height: 1.65 !important;
+  margin-bottom: 14px !important;
+  font-style: italic !important;
+  border-left: 2px solid var(--ws-green, #10d07a) !important;
+  padding-left: 8px !important;
+}
+
+/* Primary panel — brighter header signals importance */
+.panel--primary .panel-header {
+  background: var(--ws-lift, #131c30) !important;
+}
+.panel--primary .panel-header-label {
+  color: var(--ws-sub, #7a94c0) !important;
+}
+
+/* Radio — playing station glows */
+.rstation.playing .rstation-label {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+  text-shadow: 0 0 8px rgba(96,165,250,0.35) !important;
+  font-weight: 600 !important;
+}
+.rstation.playing .rstation-icon {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+  filter: drop-shadow(0 0 3px rgba(96,165,250,0.45)) !important;
+}
+
+/* Export — muted vs Import */
+#btn-export {
+  opacity: 0.6 !important;
+}
+#btn-export:hover {
+  opacity: 1 !important;
+}
+
+/* Timer glow when active */
+.topbar-timer-val.timer-active {
+  color: var(--ws-accent-hi, #60a5fa) !important;
+}
+
+/* READABILITY FIX v8-2 — surgical overrides */
+.topbar-group-label, .topbar-timer-label, .topbar-active-preset-label { font-size: 0.6rem !important; color: #90aed0 !important; }
+.card-title { font-size: 0.65rem !important; color: #90aed0 !important; }
+/* label-sm intentionally excluded — controlled below */
+.grid-axis-col span, .grid-axis-row span { font-size: 0.62rem !important; color: #7a94c0 !important; }
+.ui-theme-pill, .skin-btn { font-size: 0.68rem !important; min-width: 0; }
+/* rstation-label intentionally excluded — controlled below */
+
+</style>
+
+<!-- WeSolve chip logo builder -->
+<script>
+(function() {
+  // 3×3 grid — W silhouette: corners + center col lit
+  // [L, ., L]   row 0
+  // [L, L, L]   row 1
+  // [L, ., L]   row 2  (W shape — outer legs + crossbar)
+  var p = [1,0,1, 1,1,1, 1,0,1];
+  var chip = document.getElementById('ws-chip');
+  if (!chip) return;
+  p.forEach(function(on) {
+    var c = document.createElement('div');
+    c.className = 'ws-chip-cell ' + (on ? 'on' : 'off');
+    chip.appendChild(c);
+  });
+})();
+</script>
 </body>
 </html>
